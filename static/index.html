@@ -1079,6 +1079,7 @@
                 document.getElementById('entryPlate').value = '';
                 document.getElementById('entryPlate').focus();
                 document.getElementById('entryReceipt').classList.remove('active');
+                openCameraScanner(); // Cámara visible al abrir modal
             }
             if(id === 'paymentModal') {
                 document.getElementById('payCode').value = '';
@@ -1091,6 +1092,7 @@
             if(id === 'exitModal') {
                 document.getElementById('exitCode').value = '';
                 document.getElementById('exitCode').focus();
+                startExitCamera(); // Cámara de salida visible al abrir modal
             }
             if(id === 'ticketModal') {
                 document.getElementById('viewCode').value = '';
