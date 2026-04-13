@@ -1741,16 +1741,18 @@
             }
         }
 
-        // Solo muestra el container y el video — NO reinicia ni para el stream
+        // Muestra el container, asegura el stream y reactiva el escaneo
         async function openCameraScanner() {
             const container = document.getElementById('cameraContainer');
             container.style.display = 'block';
             if (!videoStream) {
-                // Primera vez o si se cerró manualmente
                 await initCamera();
             } else {
-                // Stream ya existe, solo asegurar que el video lo muestra
                 document.getElementById('cameraVideo').srcObject = videoStream;
+                // Reactivar escaneo si se había detenido
+                if (!scanLoopRunning) {
+                    startScanLoop();
+                }
             }
         }
 
