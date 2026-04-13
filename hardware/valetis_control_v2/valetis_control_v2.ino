@@ -34,8 +34,8 @@ const int SERVO1    = 10;
 const int SERVO2    = 6;
 const int SENSOR1   = 7;
 const int SENSOR2   = 8;
-const int PULSADOR1 = 2;   // Botón ENTRADA
-const int PULSADOR2 = 3;   // Botón PAGO ← NUEVO
+const int PULSADOR1 = 3;   // Botón ENTRADA
+const int PULSADOR2 = 2;   // Botón PAGO
 
 // ── CONSTANTES ──────────────────────────────────────────────
 const int CERRADO = 0;

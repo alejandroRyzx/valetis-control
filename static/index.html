@@ -1815,18 +1815,17 @@
         async function autoEntry() {
             if (entryInProgress) return;
             entryInProgress = true;
-            // Seguro: si el sensor nunca llega, liberar en 30s
             setTimeout(() => { entryInProgress = false; }, 30000);
 
             let plate = lastDetectedPlate;
 
             if (!plate) {
-                // Wait up to 3 seconds for a plate to be detected
-                const deadline = Date.now() + 3000;
+                // Esperar máximo 2 segundos por detección de placa
+                const deadline = Date.now() + 2000;
                 while (!lastDetectedPlate && Date.now() < deadline) {
                     await new Promise(r => setTimeout(r, 200));
                 }
-                plate = lastDetectedPlate || '';
+                plate = lastDetectedPlate || 'SIN-PLACA';
             }
 
             try {
@@ -1839,9 +1838,10 @@
 
                 if (res.ok) {
                     const ticketCode = data.ticket ? data.ticket.code : '';
-                    showToast(`Ticket ${ticketCode} emitido. Barrera abierta.`, 'success');
+                    showToast(`Ticket ${ticketCode} emitido → ${plate}`, 'success');
                     fetchStatus();
-                    // entryInProgress stays true until sensor detects car passed
+                    lastDetectedPlate = '';
+                    lastDetectedTime = 0;
                 } else {
                     showToast(data.error || 'Error al emitir ticket', 'error');
                     entryInProgress = false;
