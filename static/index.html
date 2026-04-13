@@ -1815,18 +1815,10 @@
         async function autoEntry() {
             if (entryInProgress) return;
             entryInProgress = true;
-            setTimeout(() => { entryInProgress = false; }, 30000);
+            setTimeout(() => { entryInProgress = false; }, 10000); // Safety unlock
 
-            let plate = lastDetectedPlate;
-
-            if (!plate) {
-                // Esperar máximo 2 segundos por detección de placa
-                const deadline = Date.now() + 2000;
-                while (!lastDetectedPlate && Date.now() < deadline) {
-                    await new Promise(r => setTimeout(r, 200));
-                }
-                plate = lastDetectedPlate || 'SIN-PLACA';
-            }
+            const plate = lastDetectedPlate || 'SIN-PLACA';
+            console.log('[Valetis] autoEntry disparado → placa:', plate);
 
             try {
                 const res = await fetch(`${API_BASE}/entry_auto`, {
@@ -1844,46 +1836,54 @@
                     lastDetectedTime = 0;
                 } else {
                     showToast(data.error || 'Error al emitir ticket', 'error');
-                    entryInProgress = false;
                 }
             } catch (e) {
                 showToast('Error de conexión al emitir ticket', 'error');
-                entryInProgress = false;
             }
+            entryInProgress = false;
         }
 
         let paymentInProgress = false;
+        let lastAutoEntryTime = 0;
+        let lastAutoPayTime = 0;
 
         async function pollArduinoEvents() {
             if (!localStorage.getItem('auth_token')) return;
             try {
                 const res = await fetch(`${API_BASE}/arduino_events`);
-                if (res.ok) {
-                    const data = await res.json();
+                if (!res.ok) return;
+                const data = await res.json();
 
-                    if (data.button_pressed && !entryInProgress) {
+                // ─── PULSADOR 1 (pin 2) → ENTRADA ──────────────────
+                if (data.button_pressed && !entryInProgress) {
+                    const now = Date.now();
+                    if (now - lastAutoEntryTime > 3000) {
+                        lastAutoEntryTime = now;
+                        console.log('[Valetis] PULSADOR ENTRADA detectado → autoEntry()');
                         autoEntry();
                     }
+                }
 
-                    if (data.payment_pressed && !paymentInProgress) {
+                // ─── PULSADOR 2 (pin 3) → PAGO ─────────────────────
+                if (data.payment_pressed && !paymentInProgress) {
+                    const now = Date.now();
+                    if (now - lastAutoPayTime > 3000) {
+                        lastAutoPayTime = now;
+                        console.log('[Valetis] PULSADOR PAGO detectado → autoPayment()');
                         autoPayment();
                     }
+                }
 
-                    if (data.sensor_passed) {
-                        // Carro pasó — resetear estado y reactivar escaneo siempre
-                        entryInProgress = false;
-                        lastDetectedPlate = '';
-                        lastDetectedTime = 0;
-                        document.getElementById('entryPlate').value = '';
-                        const statusEl = document.getElementById('camStatusName');
-                        if (statusEl) statusEl.innerText = 'Escaneo Activo...';
-                        if (!scanLoopRunning) {
-                            if (videoStream) {
-                                startScanLoop();
-                            } else {
-                                initCamera();
-                            }
-                        }
+                // ─── SENSOR → Carro pasó ────────────────────────────
+                if (data.sensor_passed) {
+                    entryInProgress = false;
+                    lastDetectedPlate = '';
+                    lastDetectedTime = 0;
+                    document.getElementById('entryPlate').value = '';
+                    const statusEl = document.getElementById('camStatusName');
+                    if (statusEl) statusEl.innerText = 'Escaneo Activo...';
+                    if (!scanLoopRunning) {
+                        if (videoStream) { startScanLoop(); } else { initCamera(); }
                     }
                 }
             } catch (e) {}

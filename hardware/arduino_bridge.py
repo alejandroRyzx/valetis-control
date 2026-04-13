@@ -83,11 +83,11 @@ class ArduinoBridge:
 
                         if "pulsador_entrada" in line_lower:
                             self._button_events.put(line)
-                            print("[ArduinoBridge] Evento: BOTON ENTRADA")
+                            print("[ArduinoBridge] ▶ BOTON ENTRADA detectado")
 
                         if "pulsador_pago" in line_lower:
                             self._payment_events.put(line)
-                            print("[ArduinoBridge] Evento: BOTON PAGO")
+                            print("[ArduinoBridge] ▶ BOTON PAGO detectado")
 
                         if ENTRY_SENSOR_ENABLED:
                             for kw in ENTRY_SENSOR_KEYWORDS:

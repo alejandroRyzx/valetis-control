@@ -6,8 +6,8 @@ import base64
 with open('static/valetis-logo.png', 'rb') as f:
     img_b64 = base64.b64encode(f.read()).decode('utf-8')
 
-app_id = "u454i168nm3j5M"
-api_key = "nxQDBePua5Uj3l9wrjA5BxsCIBUWpo6ifs8cYLlDLuxt7RSOBy"
+app_id = "u458i170nltDI9"
+api_key = "zOjPzh4QjEYfflpJH0urT9Zr40Z0E9LpoKjQfEYEb8MI4pHTcj"
 
 payload = {
     "app_id": app_id,
