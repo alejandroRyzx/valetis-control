@@ -25,6 +25,13 @@ from core.ticket_manager import TicketManager
 from core.payment_manager import PaymentManager
 from core.parking_manager import ParkingManager
 from hardware.arduino_bridge import ArduinoBridge
+from hardware.bluetooth_printer import BluetoothPrinter
+from config import (
+    BLUETOOTH_PRINTER_ENABLED,
+    BLUETOOTH_PRINTER_MAC,
+    BLUETOOTH_PRINTER_WINDOWS_PORT,
+    BLUETOOTH_PRINTER_BAUDRATE,
+)
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
@@ -131,14 +138,16 @@ class APIHandler(BaseHTTPRequestHandler):
             self.handle_get_status()
         elif path == "/api/tickets_today":
             self.handle_get_tickets_today()
-        elif path == "/api/export_excel":
-            self.handle_export_excel()
         elif path == "/api/download_report":
             self.handle_download_report()
         elif path == "/api/close_day":
             self.handle_close_day()
         elif path == "/api/open_day":
             self.handle_open_day()
+        elif path == "/api/arduino_events":
+            self.handle_arduino_events()
+        elif path == "/api/printer_status":
+            self.handle_printer_status()
         else:
             self.send_error(404, "Not Found")
 
@@ -180,6 +189,8 @@ class APIHandler(BaseHTTPRequestHandler):
             self.handle_manual_entry()
         elif path == "/api/manual_exit":
             self.handle_manual_exit()
+        elif path == "/api/entry_auto":
+            self.handle_entry_auto(data)
         else:
             self.send_error(404, "Not Found")
 
@@ -229,47 +240,7 @@ class APIHandler(BaseHTTPRequestHandler):
 
     def handle_get_tickets_today(self):
         tickets = ticket_manager.get_today_tickets()
-        system_closed = db.get_system_closed()
-        self.send_json(200, {"tickets": tickets, "system_closed": system_closed})
-
-    def handle_export_excel(self):
-        from urllib.parse import urlparse, parse_qs
-        import csv
-        from io import StringIO
-        
-        parsed = urlparse(self.path)
-        qs = parse_qs(parsed.query)
-        code = qs.get("code", [None])[0]
-        
-        if code:
-            ticket = ticket_manager.get_ticket(code)
-            if not ticket:
-                self.send_error(404, "Ticket no encontrado")
-                return
-            tickets = [ticket]
-            filename = f"detalle_ticket_{code}.csv"
-        else:
-            tickets = ticket_manager.get_today_tickets()
-            filename = "historial_valetis.csv"
-            
-        output = StringIO()
-        writer = csv.writer(output)
-        writer.writerow(["Codigo", "Placa", "Hora Entrada", "Hora Salida", "Espacio", "Estado", "Monto", "Pagado", "Limite Salida"])
-        for t in tickets:
-            writer.writerow([
-                t.get("code", ""), t.get("plate", ""), t.get("entry_time", ""), t.get("exit_time", ""),
-                str(t.get("space_index", "")), t.get("status", ""), str(round(t.get("amount_due", 0.0), 2)),
-                "Si" if t.get("paid") else "No", t.get("exit_deadline", "")
-            ])
-            
-        csv_data = output.getvalue().encode('utf-8-sig') # Add BOM for Excel UTF-8 display
-        
-        self.send_response(200)
-        self.send_header('Content-Type', 'text/csv; charset=utf-8')
-        self.send_header('Content-Disposition', f'attachment; filename="{filename}"')
-        self.send_header('Content-Length', str(len(csv_data)))
-        self.end_headers()
-        self.wfile.write(csv_data)
+        self.send_json(200, {"tickets": tickets})
 
     def handle_login(self, data):
         username = data.get("username", "")
@@ -451,6 +422,51 @@ class APIHandler(BaseHTTPRequestHandler):
             print("[ERROR] handle_open_day:", e)
             self.send_json(500, {"error": f"No se pudo abrir el sistema: {str(e)}"})
 
+    def handle_arduino_events(self):
+        button_pressed = False
+        sensor_passed = False
+        if arduino:
+            button_pressed = arduino.pop_button_event()
+            sensor_passed = arduino.pop_sensor_event()
+        self.send_json(200, {
+            "button_pressed": button_pressed,
+            "sensor_passed": sensor_passed,
+        })
+
+    def handle_printer_status(self):
+        if printer:
+            self.send_json(200, {
+                "connected": printer.connected,
+                "mode": printer.connection_mode or "none",
+                "port": printer.serial_port or "N/A",
+                "last_error": printer.last_error,
+            })
+        else:
+            self.send_json(200, {
+                "connected": False,
+                "mode": "disabled",
+                "port": "N/A",
+                "last_error": "Impresora deshabilitada en config",
+            })
+
+    def handle_entry_auto(self, data):
+        system_closed = db.get_system_closed()
+        if system_closed:
+            return self.send_json(400, {"error": "El sistema está cerrado."})
+
+        plate = (data.get("plate") or "").strip().upper() or "SIN-PLACA"
+        ticket = ticket_manager.create_ticket(plate)
+
+        ticket_manager.print_entry_ticket(ticket)
+
+        if arduino:
+            arduino.abrir_entrada()
+
+        self.send_json(200, {
+            "ticket": ticket,
+            "message": f"Ticket {ticket['code']} emitido. Barrera abierta."
+        })
+
     def handle_recognize_plate(self, data):
         try:
             image_data = data.get("image", "")
@@ -527,18 +543,31 @@ if __name__ == "__main__":
     print("Iniciando servicios del parqueo...")
 
     db = DatabaseManager()
-    ticket_manager = TicketManager(db)
     payment_manager = PaymentManager(db)
     parking_manager = ParkingManager(db)
 
-    # Auto-detecta el puerto — no necesitas cambiar nada aquí
+    # Inicializar impresora Bluetooth
+    printer = None
+    if BLUETOOTH_PRINTER_ENABLED:
+        try:
+            printer = BluetoothPrinter(
+                mac_address=BLUETOOTH_PRINTER_MAC,
+                serial_port=BLUETOOTH_PRINTER_WINDOWS_PORT,
+                baudrate=BLUETOOTH_PRINTER_BAUDRATE,
+            )
+        except Exception as e:
+            print(f"[Printer] Error inicializando impresora: {e}")
+
+    ticket_manager = TicketManager(db, printer=printer)
+
+    # Auto-detecta el puerto Arduino — no necesitas cambiar nada aquí
     arduino = ArduinoBridge(baudrate=9600)
 
-    server = HTTPServer(("127.0.0.1", 8080), APIHandler)
+    server = HTTPServer(("0.0.0.0", 8080), APIHandler)
 
     print("====================================")
     print("Interfaz visual iniciada en:")
-    print("http://127.0.0.1:8080/")
+    print("http://localhost:8080/")
     print("====================================")
     print("(Presiona CTRL+C para detener el servidor)")
 
@@ -550,6 +579,11 @@ if __name__ == "__main__":
         try:
             if arduino:
                 arduino.close()
+        except Exception:
+            pass
+        try:
+            if printer:
+                printer.disconnect()
         except Exception:
             pass
         db.close()

@@ -5,8 +5,24 @@ from config import TICKET_EXPIRATION_HOURS
 
 class TicketManager:
 
-    def __init__(self, db):
+    def __init__(self, db, printer=None):
         self.db = db
+        self.printer = printer
+
+    def print_entry_ticket(self, ticket):
+        if not self.printer:
+            return
+        try:
+            entry_str = datetime.fromisoformat(ticket["entry_time"]).strftime("%d/%m/%Y %H:%M")
+            self.printer.ensure_connected()
+            self.printer.print_entry_ticket({
+                "ticket_id": ticket["code"],
+                "plate": ticket["plate"],
+                "entry_time": entry_str,
+                "qr_data": ticket["code"],
+            })
+        except Exception as e:
+            print(f"[TicketManager] Error imprimiendo ticket: {e}")
 
     def create_ticket(self, plate: str):
 
