@@ -425,12 +425,15 @@ class APIHandler(BaseHTTPRequestHandler):
     def handle_arduino_events(self):
         button_pressed = False
         sensor_passed = False
+        payment_pressed = False
         if arduino:
             button_pressed = arduino.pop_button_event()
             sensor_passed = arduino.pop_sensor_event()
+            payment_pressed = arduino.pop_payment_event()
         self.send_json(200, {
             "button_pressed": button_pressed,
             "sensor_passed": sensor_passed,
+            "payment_pressed": payment_pressed,
         })
 
     def handle_printer_status(self):

@@ -1848,6 +1848,8 @@
             }
         }
 
+        let paymentInProgress = false;
+
         async function pollArduinoEvents() {
             if (!localStorage.getItem('auth_token')) return;
             try {
@@ -1857,6 +1859,10 @@
 
                     if (data.button_pressed && !entryInProgress) {
                         autoEntry();
+                    }
+
+                    if (data.payment_pressed && !paymentInProgress) {
+                        autoPayment();
                     }
 
                     if (data.sensor_passed) {
@@ -1871,13 +1877,64 @@
                             if (videoStream) {
                                 startScanLoop();
                             } else {
-                                // Cámara no iniciada aún — intentar arrancarla
                                 initCamera();
                             }
                         }
                     }
                 }
             } catch (e) {}
+        }
+
+        // ── AUTO-PAGO DESDE PULSADOR ARDUINO ────────────────────────
+        async function autoPayment() {
+            if (paymentInProgress) return;
+            paymentInProgress = true;
+            // Seguro: liberar lock después de 15s si algo falla
+            setTimeout(() => { paymentInProgress = false; }, 15000);
+
+            try {
+                // 1. Obtener tickets de hoy
+                const ticketsRes = await fetch(`${API_BASE}/tickets_today`);
+                if (!ticketsRes.ok) { paymentInProgress = false; return; }
+                const ticketsData = await ticketsRes.json();
+
+                // 2. Buscar el ticket activo más antiguo sin pagar
+                const unpaid = ticketsData.tickets.filter(t => t.status === 'activo' && !t.paid);
+                if (unpaid.length === 0) {
+                    showToast('No hay tickets pendientes de pago', 'error');
+                    paymentInProgress = false;
+                    return;
+                }
+
+                const ticket = unpaid[0]; // El más antiguo
+
+                // 3. Consultar monto
+                const infoRes = await fetch(`${API_BASE}/payment_info`, {
+                    method: 'POST', body: JSON.stringify({ code: ticket.code })
+                });
+                const infoData = await infoRes.json();
+                if (!infoRes.ok) {
+                    showToast(infoData.error || 'Error consultando pago', 'error');
+                    paymentInProgress = false;
+                    return;
+                }
+
+                // 4. Confirmar pago directamente
+                const payRes = await fetch(`${API_BASE}/payment`, {
+                    method: 'POST', body: JSON.stringify({ code: ticket.code, confirm: true })
+                });
+                const payData = await payRes.json();
+
+                if (payRes.ok) {
+                    showToast(`Pago procesado: ${ticket.plate} → $${infoData.amount.toFixed(2)}`, 'success');
+                    fetchStatus();
+                } else {
+                    showToast(payData.error || 'Error al procesar pago', 'error');
+                }
+            } catch (e) {
+                showToast('Error de conexión al procesar pago', 'error');
+            }
+            paymentInProgress = false;
         }
 
         // Al cerrar el modal de entrada solo ocultar el video, nunca apagar la cámara

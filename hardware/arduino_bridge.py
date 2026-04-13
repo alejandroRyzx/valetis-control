@@ -26,6 +26,7 @@ class ArduinoBridge:
         self._lock = threading.Lock()
         self._button_events = queue.Queue()
         self._sensor_events = queue.Queue()
+        self._payment_events = queue.Queue()
         self._reader_thread = None
         self._running = False
 
@@ -84,6 +85,10 @@ class ArduinoBridge:
                             self._button_events.put(line)
                             print("[ArduinoBridge] Evento: BOTON ENTRADA")
 
+                        if "pulsador_pago" in line_lower:
+                            self._payment_events.put(line)
+                            print("[ArduinoBridge] Evento: BOTON PAGO")
+
                         if ENTRY_SENSOR_ENABLED:
                             for kw in ENTRY_SENSOR_KEYWORDS:
                                 if kw.lower() in line_lower:
@@ -115,6 +120,17 @@ class ArduinoBridge:
         while not self._sensor_events.empty():
             try:
                 self._sensor_events.get_nowait()
+                found = True
+            except queue.Empty:
+                break
+        return found
+
+    def pop_payment_event(self):
+        """Drains payment button event queue. Returns True if at least one event was pending."""
+        found = False
+        while not self._payment_events.empty():
+            try:
+                self._payment_events.get_nowait()
                 found = True
             except queue.Empty:
                 break
