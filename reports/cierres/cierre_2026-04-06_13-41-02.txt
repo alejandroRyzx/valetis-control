@@ -1,0 +1,116 @@
+=== CIERRE DE CAJA / DIA ===
+Fecha: 2026-04-06
+Hora de generación: 13:41:02
+
+Codigo: TKT-C14114BC
+Placa: 55411
+Hora entrada: 2026-04-06 00:32:20
+Hora salida: 2026-04-06 00:32:41
+Tiempo estacionado: 0h 0min
+Espacio: 1
+Estado: SALIDO
+Pagado: Si
+Monto: $0.50
+----------------------------------------
+Codigo: TKT-3712950F
+Placa: P940160
+Hora entrada: 2026-04-06 12:43:13
+Hora salida: 2026-04-06 12:54:12
+Tiempo estacionado: 0h 10min
+Espacio: 1
+Estado: FORZADO/LIBERADO
+Pagado: No
+Monto: $0.00
+----------------------------------------
+Codigo: TKT-E2740A15
+Placa: P940160
+Hora entrada: 2026-04-06 12:49:06
+Hora salida: 2026-04-06 12:54:25
+Tiempo estacionado: 0h 5min
+Espacio: 2
+Estado: FORZADO/LIBERADO
+Pagado: No
+Monto: $0.50
+----------------------------------------
+Codigo: TKT-02BF8DBD
+Placa: CAIFORNTA
+Hora entrada: 2026-04-06 12:51:49
+Hora salida: 2026-04-06 12:54:24
+Tiempo estacionado: 0h 2min
+Espacio: 3
+Estado: FORZADO/LIBERADO
+Pagado: No
+Monto: $0.50
+----------------------------------------
+Codigo: TKT-193C8666
+Placa: C94016
+Hora entrada: 2026-04-06 12:54:07
+Hora salida: 2026-04-06 12:54:27
+Tiempo estacionado: 0h 0min
+Espacio: 4
+Estado: FORZADO/LIBERADO
+Pagado: No
+Monto: $0.00
+----------------------------------------
+Codigo: TKT-E471C0B3
+Placa: P940160
+Hora entrada: 2026-04-06 12:55:13
+Hora salida: 2026-04-06 12:57:20
+Tiempo estacionado: 0h 2min
+Espacio: 1
+Estado: FORZADO/LIBERADO
+Pagado: Si
+Monto: $0.50
+----------------------------------------
+Codigo: TKT-6FB7EF90
+Placa: P940160
+Hora entrada: 2026-04-06 12:57:53
+Hora salida: 2026-04-06 12:59:16
+Tiempo estacionado: 0h 1min
+Espacio: 1
+Estado: SALIDO
+Pagado: Si
+Monto: $0.50
+----------------------------------------
+Codigo: TKT-4B4196E0
+Placa: P940160
+Hora entrada: 2026-04-06 13:02:51
+Hora salida: 2026-04-06 13:04:03
+Tiempo estacionado: 0h 1min
+Espacio: 1
+Estado: SALIDO
+Pagado: Si
+Monto: $0.50
+----------------------------------------
+Codigo: TKT-DFDEEEEC
+Placa: P940160
+Hora entrada: 2026-04-06 13:05:41
+Hora salida: 2026-04-06 13:07:01
+Tiempo estacionado: 0h 1min
+Espacio: 1
+Estado: SALIDO
+Pagado: Si
+Monto: $0.50
+----------------------------------------
+Codigo: TKT-89E39541
+Placa: P940160
+Hora entrada: 2026-04-06 13:10:04
+Hora salida: 2026-04-06 13:40:59
+Tiempo estacionado: 0h 30min
+Espacio: 1
+Estado: FORZADO/LIBERADO
+Pagado: No
+Monto: $0.00
+----------------------------------------
+Codigo: TKT-5692599C
+Placa: P940160
+Hora entrada: 2026-04-06 13:10:06
+Hora salida: 2026-04-06 13:10:59
+Tiempo estacionado: 0h 0min
+Espacio: 2
+Estado: SALIDO
+Pagado: Si
+Monto: $0.50
+----------------------------------------
+
+TOTAL COBRADO DEL DIA: $3.00

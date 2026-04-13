@@ -1,0 +1,16 @@
+=== CIERRE DE CAJA / DIA ===
+Fecha: 2026-03-23
+Hora de generación: 19:08:47
+
+Codigo: TKT-D097FA74
+Placa: 455441
+Hora entrada: 2026-03-23 19:04:23
+Hora salida: 2026-03-23 19:06:29
+Tiempo estacionado: 0h 2min
+Espacio: 5
+Estado: SALIDO
+Pagado: Si
+Monto: $0.50
+----------------------------------------
+
+TOTAL COBRADO DEL DIA: $0.50

@@ -1,0 +1,2175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Valetis Spatial Control</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@200;300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #030303;
+            --bg-card: rgba(255, 255, 255, 0.03);
+            --bg-card-hover: rgba(255, 255, 255, 0.05);
+            
+            --border-glass: rgba(255, 255, 255, 0.08);
+            --border-glass-strong: rgba(255, 255, 255, 0.15);
+            
+            --text-pure: #ffffff;
+            --text-dim: #a1a1aa;
+            --text-muted: #52525b;
+            
+            --accent-glow: #ffffff;
+            
+            --status-ok: #10b981;
+            --status-warn: #f59e0b;
+            --status-err: #ef4444;
+            
+            --radius-sm: 12px;
+            --radius-md: 20px;
+            --radius-lg: 32px;
+            
+            --transition-smooth: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-pure);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Abstract Noise Background */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* Spatial Lights */
+        .ambient-light {
+            position: fixed;
+            width: 800px; height: 800px;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.15;
+            z-index: -1;
+            animation: breathe 15s infinite alternate ease-in-out;
+        }
+        .light-1 { top: -20vh; left: -10vw; background: radial-gradient(circle, #ffffff 0%, transparent 70%); }
+        .light-2 { bottom: -30vh; right: -10vw; background: radial-gradient(circle, #a1a1aa 0%, transparent 70%); animation-delay: -5s; }
+
+        @keyframes breathe {
+            0% { transform: scale(1) translate(0, 0); opacity: 0.1; }
+            100% { transform: scale(1.2) translate(5%, 5%); opacity: 0.15; }
+        }
+
+        h1, h2, h3, .serif {
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            letter-spacing: -0.04em;
+            line-height: 1.1;
+        }
+
+        /* Login Overlay Split Design */
+        #loginOverlay {
+            position: fixed; inset: 0; z-index: 10000;
+            background: #000;
+            display: flex;
+            align-items: stretch;
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .login-left-panel {
+            flex: 1.2;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            position: relative;
+        }
+
+        .login-image-wrap {
+            position: absolute;
+            top: 24px; left: 24px; right: 24px; bottom: 120px;
+            border-radius: 32px;
+            overflow: hidden;
+            background: url('/static/img/pawel-czerwinski-BPrk2cOoCq8-unsplash.jpg') center/cover;
+        }
+
+        .login-image-overlay {
+            position: absolute; inset: 0;
+            background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.5) 100%);
+        }
+
+        .login-info-card {
+            position: relative;
+            background: #fbf9f4;
+            color: #111;
+            padding: 32px 40px;
+            border-radius: 20px;
+            max-width: 520px;
+            margin: 40px;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.4);
+        }
+
+        .login-stats {
+            display: flex; gap: 48px; border-bottom: 1px solid #e0dfd9; padding-bottom: 24px; margin-bottom: 24px;
+        }
+        
+        .login-stat { display: flex; flex-direction: column; gap: 4px; }
+        .login-stat h4 { margin: 0; font-size: 2.2rem; font-weight: 800; letter-spacing: -1px; color: #000; }
+        .login-stat span { font-size: 0.85rem; font-weight: 600; color: #555; }
+
+        .login-info-card p {
+            color: #444; font-size: 0.95rem; margin: 0; line-height: 1.6; font-weight: 500;
+        }
+
+        .login-right-panel {
+            flex: 1;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            position: relative;
+            margin-left: -100px;
+            z-index: 20;
+            border-radius: 40px 0 0 40px;
+            box-shadow: -20px 0 80px rgba(0,0,0,0.8);
+        }
+
+        .login-form-container {
+            width: 100%;
+            max-width: 440px;
+            color: white;
+            text-align: left;
+        }
+
+        .login-form-container h1 { font-size: 2.5rem; font-weight: 500; margin: 0 0 16px 0; letter-spacing: -1px; }
+        .login-form-container > p { color: #888; font-size: 1rem; line-height: 1.5; margin-bottom: 40px; font-weight: 400; }
+        
+        .login-form-group { margin-bottom: 24px; }
+        .login-form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: #aaa; margin-bottom: 8px; }
+
+        .btn-white {
+            width: 100%; background: #FFFFFF; color: #000;
+            border: none; padding: 20px; border-radius: 12px;
+            font-size: 1.05rem; font-weight: 600; margin-top: 16px; cursor: pointer; transition: 0.3s;
+        }
+        .btn-white:hover { background: #e0e0e0; transform: translateY(-2px); }
+
+        @media (max-width: 1000px) {
+            .login-left-panel { display: none; }
+            .login-right-panel { padding: 24px; margin-left: 0; border-radius: 0; }
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 18px 24px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-md);
+            color: var(--text-pure);
+            font-size: 1rem;
+            outline: none;
+            transition: var(--transition-smooth);
+            font-family: 'Inter', sans-serif;
+            margin-bottom: 16px;
+        }
+        
+        .form-control::placeholder { color: var(--text-muted); }
+        .form-control:focus {
+            background: rgba(255,255,255,0.06);
+            border-color: var(--border-glass-strong);
+            box-shadow: 0 0 0 4px rgba(255,255,255,0.02);
+            transform: translateY(-2px);
+        }
+
+        .btn-action {
+            display: inline-flex; justify-content: center; align-items: center; gap: 10px;
+            width: 100%; padding: 18px 32px;
+            border-radius: var(--radius-md);
+            font-size: 1rem; font-weight: 500; letter-spacing: -0.01em;
+            cursor: pointer; transition: var(--transition-smooth);
+            border: none;
+        }
+
+        .btn-submit {
+            background: var(--text-pure);
+            color: var(--bg-base);
+            box-shadow: 0 10px 30px -10px rgba(255,255,255,0.3);
+            border-radius: var(--radius-md);
+            padding: 16px 24px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+        .btn-submit:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 20px 40px -10px rgba(255,255,255,0.4);
+        }
+
+        .btn-cancel {
+            background: rgba(255,255,255,0.05);
+            color: var(--text-pure);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-md);
+            padding: 16px 24px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+        .btn-cancel:hover { background: rgba(255,255,255,0.1); }
+
+        /* Header */
+        header {
+            padding: 32px 64px;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            background: transparent;
+            position: sticky; top: 0; z-index: 50;
+        }
+
+        .logo-container { display: flex; align-items: center; gap: 16px; }
+        .logo-container h1 { font-size: 2rem; margin: 0; }
+
+        .real-time-clock {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            color: var(--text-dim);
+            text-align: center;
+            background: var(--bg-card);
+            padding: 10px 24px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-glass);
+            backdrop-filter: blur(20px);
+        }
+
+        .header-actions { justify-self: end; display: flex; align-items: center; gap: 24px; }
+
+        .system-status {
+            display: inline-flex; align-items: center; gap: 10px;
+            padding: 10px 20px;
+            border-radius: 100px;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--status-ok);
+            font-size: 0.85rem; font-weight: 500;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            letter-spacing: -0.01em;
+        }
+        .system-status.closed {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--status-err);
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+        .status-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background-color: currentColor;
+            box-shadow: 0 0 12px currentColor;
+        }
+
+        .btn-logout {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-glass);
+            color: var(--text-dim);
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: var(--transition-smooth);
+        }
+        .btn-logout:hover {
+            color: var(--text-pure);
+            border-color: var(--border-glass-strong);
+            background: rgba(255,255,255,0.1);
+            transform: scale(1.05);
+        }
+
+        /* Container Layout */
+        .container {
+            flex: 1;
+            padding: 0 64px 64px;
+            max-width: 1800px;
+            margin: 0 auto; width: 100%;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 48px;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar { display: flex; flex-direction: column; gap: 40px; }
+        
+        .sidebar-title {
+            font-size: 0.75rem; letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-bottom: 16px; font-weight: 600;
+            text-transform: uppercase;
+            padding-left: 4px;
+        }
+
+        .nav-group { display: flex; flex-direction: column; gap: 8px; }
+
+        .btn-nav {
+            width: 100%; padding: 16px;
+            border-radius: var(--radius-sm);
+            border: 1px solid transparent; background: transparent;
+            color: var(--text-dim);
+            font-size: 0.95rem; font-weight: 500;
+            cursor: pointer; transition: var(--transition-smooth);
+            text-align: left; display: flex; align-items: center; gap: 16px;
+        }
+        .btn-nav:hover {
+            color: var(--text-pure);
+            background: var(--bg-card);
+            border-color: var(--border-glass);
+            transform: translateX(4px);
+        }
+        
+        .btn-nav.primary {
+            background: var(--text-pure); color: var(--bg-base);
+            border-color: transparent;
+        }
+        .btn-nav.primary:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 10px 30px -10px rgba(255,255,255,0.3);
+        }
+        .btn-nav.primary svg { stroke: var(--bg-base); }
+
+        /* Bento Grid Dashboard */
+        .dashboard-content { display: flex; flex-direction: column; gap: 32px; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
+
+        .stat-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-lg);
+            padding: 24px 28px;
+            transition: var(--transition-smooth);
+            display: flex; flex-direction: column; justify-content: space-between;
+            min-height: 120px;
+        }
+        .stat-card:hover { border-color: var(--border-glass-strong); box-shadow: 0 20px 40px -15px rgba(0,0,0,0.5); transform: translateY(-4px); }
+
+        .stat-card .label { color: var(--text-dim); font-size: 0.9rem; font-weight: 500; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+        .stat-card .value {
+            font-family: 'Inter', sans-serif;
+            font-weight: 800;
+            font-size: 3.5rem; line-height: 1;
+            letter-spacing: -0.05em;
+            color: var(--text-pure);
+        }
+
+        .stat-card.active .value { color: var(--status-ok); }
+        .stat-card.busy .value { color: var(--text-pure); }
+
+        /* Parking Grid */
+        .parking-section {
+            background: var(--bg-card);
+            backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-lg);
+            padding: 48px;
+        }
+
+        .section-header h2 { font-size: 2.5rem; margin-bottom: 40px; color: var(--text-pure); }
+
+        .parking-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
+
+        .space-card {
+            aspect-ratio: 1 / 1.6;
+            border: 2px dashed rgba(255,255,255,0.2);
+            border-bottom: none; /* Gives the illusion of an open entry for the car */
+            border-radius: var(--radius-sm);
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+            padding: 16px;
+            display: flex; flex-direction: column; justify-content: space-between; align-items: center;
+            background: rgba(255,255,255,0.01);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            cursor: pointer; position: relative; overflow: hidden;
+            border-top-width: 4px; /* Thick wall line */
+        }
+
+        .space-card::before {
+            content: ''; position: absolute; inset: 0;
+            background-image: 
+                linear-gradient(45deg, transparent 45%, rgba(255,255,255,0.02) 45%, rgba(255,255,255,0.02) 55%, transparent 55%),
+                linear-gradient(-45deg, transparent 45%, rgba(255,255,255,0.02) 45%, rgba(255,255,255,0.02) 55%, transparent 55%);
+            background-size: 10px 10px; opacity: 0.5;
+            z-index: 0; pointer-events: none;
+        }
+
+        .space-card .space-id {
+            position: relative; z-index: 1;
+            font-family: 'Inter', sans-serif;
+            font-weight: 800;
+            font-size: 3.5rem; 
+            letter-spacing: -0.05em;
+            line-height: 1; margin-top: 10px;
+        }
+
+        .space-card .space-status {
+            position: relative; z-index: 1;
+            font-size: 0.70rem; font-weight: 700; letter-spacing: 0.05em;
+            padding: 6px 8px; border-radius: 4px; width: 100%; text-align: center;
+            text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+
+        /* Libre = Verde */
+        .space-card.available {
+            border-color: rgba(16, 185, 129, 0.4);
+            border-top-color: rgba(16, 185, 129, 0.8);
+        }
+        .space-card.available .space-id { color: rgba(16, 185, 129, 0.3); }
+        .space-card.available .space-status { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .space-card.available:hover { background: rgba(16, 185, 129, 0.05); transform: translateY(-2px); }
+
+        /* Ocupado = Rojo */
+        .space-card.occupied {
+            border-style: solid; /* Solid lines inside filled spot */
+            border-color: rgba(239, 68, 68, 0.4);
+            border-top-color: rgba(239, 68, 68, 1);
+            background: rgba(239, 68, 68, 0.05);
+        }
+        .space-card.occupied .space-id { color: rgba(239, 68, 68, 0.9); }
+        .space-card.occupied .space-status { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.4); font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; }
+        
+        .space-card.occupied::after {
+            content: ''; position: absolute; top: 12px; right: 12px;
+            width: 8px; height: 8px; background: #ef4444;
+            border-radius: 50%; box-shadow: 0 0 15px 2px rgba(239, 68, 68, 0.6);
+            animation: pulse-dot 2s infinite; z-index: 1;
+        }
+
+        @keyframes pulse-dot { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(1.5); } 100% { opacity: 1; transform: scale(1); } }
+
+        /* Modals Spatial Focus */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000; opacity: 0; pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+
+        .modal {
+            background: var(--bg-base);
+            border: 1px solid var(--border-glass-strong);
+            border-radius: var(--radius-lg);
+            width: 100%; max-width: 500px;
+            padding: 48px;
+            transform: scale(0.95) translateY(20px); opacity: 0;
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 60px 120px -20px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+        .modal-overlay.active .modal { transform: scale(1) translateY(0); opacity: 1; }
+
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+        .modal-title { font-size: 2rem; color: var(--text-pure); }
+
+        .close-btn {
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass);
+            border-radius: 50%; width: 44px; height: 44px;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text-dim); cursor: pointer; transition: var(--transition-smooth);
+        }
+        .close-btn:hover { background: var(--text-pure); color: var(--bg-base); transform: rotate(90deg); }
+
+        .form-group { margin-bottom: 24px; }
+        .form-group label {
+            display: block; margin-bottom: 12px; font-size: 0.8rem;
+            color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;
+        }
+
+        .form-actions { display: flex; gap: 16px; margin-top: 48px; }
+        
+        .ticket-receipt {
+            background: rgba(255,255,255,0.02); padding: 24px;
+            border-radius: var(--radius-sm); font-family: 'JetBrains Mono', monospace; font-size: 0.9rem;
+            color: var(--text-dim); white-space: pre-wrap; margin-top: 24px; display: none;
+            border: 1px solid var(--border-glass); text-align: left;
+        }
+        .ticket-receipt.active { display: block; animation: fadeUp 0.5s ease forwards; }
+
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Toasts */
+        .toast-container { position: fixed; bottom: 40px; right: 40px; display: flex; flex-direction: column; gap: 16px; z-index: 2000; }
+        .toast {
+            background: var(--bg-card); backdrop-filter: blur(20px);
+            border: 1px solid var(--border-glass-strong); padding: 20px 24px;
+            border-radius: var(--radius-sm); box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+            display: flex; align-items: center; gap: 16px;
+            transform: translateX(120%); transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            min-width: 320px;
+        }
+        .toast.show { transform: translateX(0); }
+        .toast-icon { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .toast.success .toast-icon { background: rgba(16, 185, 129, 0.2); color: var(--status-ok); }
+        .toast.error .toast-icon { background: rgba(239, 68, 68, 0.2); color: var(--status-err); }
+        .toast-content { font-size: 0.95rem; font-weight: 500; color: var(--text-pure); }
+
+        /* History Table */
+        .history-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; text-align: left; }
+        .history-table th, .history-table td { padding: 16px 24px; border-bottom: 1px solid var(--border-glass); }
+        .history-table th { color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.75rem; }
+        .history-table tbody tr { transition: background 0.3s; }
+        .history-table tbody tr:hover { background: rgba(255, 255, 255, 0.03); }
+
+        .modal.modal-lg { max-width: 900px; }
+        .table-container { max-height: 500px; overflow-y: auto; border: 1px solid var(--border-glass); border-radius: var(--radius-md); }
+        
+        /* Tracking Timeline */
+        .tracking-timeline { padding: 16px 0; margin: 0; list-style: none; position: relative; margin-left:12px; }
+        .tracking-timeline::before { content:''; position:absolute; left: 0px; top: 0; bottom: 0; width: 2px; background: repeating-linear-gradient(to bottom, var(--border-glass-strong) 0, var(--border-glass-strong) 4px, transparent 4px, transparent 8px); }
+        .trk-point { position: relative; margin-bottom: 32px; padding-left: 28px; }
+        .trk-point:last-child { margin-bottom: 0; }
+        .trk-point::after { content: ''; position: absolute; left: -5px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--bg-card); border: 2px solid var(--text-dim); }
+        .trk-point.completed::after { background: var(--status-ok); border-color: var(--status-ok); box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
+        .trk-point.active::after { background: var(--status-warn); border-color: var(--status-warn); box-shadow: 0 0 10px rgba(245, 158, 11, 0.4); }
+        .trk-point.error::after { background: var(--status-err); border-color: var(--status-err); box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); }
+        
+        .trk-title { font-size: 1.1rem; color: var(--text-pure); font-weight: 500; margin-bottom: 4px; display:flex; justify-content:space-between; }
+        .trk-desc { font-size: 0.95rem; color: var(--text-muted); line-height: 1.4; margin-top:8px; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 6px; }
+        .trk-time { font-size: 0.8rem; color: var(--text-dim); }
+
+        .badge { padding: 6px 12px; border-radius: 100px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em; }
+        .badge.active { background: rgba(255,255,255,0.1); color: var(--text-pure); border: 1px solid rgba(255,255,255,0.2); }
+        .badge.completed { background: rgba(16, 185, 129, 0.1); color: var(--status-ok); }
+        .badge.unpaid { background: rgba(239, 68, 68, 0.1); color: var(--status-err); }
+
+        /* Dashboard Grid Layout (Reference Distribution) */
+        .dashboard-layout { display: grid; grid-template-columns: 1.8fr 1fr; gap: 32px; align-items: start; }
+        .dashboard-left { display: flex; flex-direction: column; gap: 32px; }
+        .dashboard-right { display: flex; flex-direction: column; height: 100%; }
+        
+        @media (max-width: 1200px) {
+            .dashboard-layout { grid-template-columns: 1fr; }
+        }
+
+        /* Route Animation */
+        @keyframes fadeRouteIn {
+            0% { opacity: 0; transform: translateY(15px); filter: blur(5px); }
+            100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+        }
+        .dashboard-layout, .history-layout {
+            animation: fadeRouteIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Real-time Calendar */
+        .calendar-section { flex: 1; display: flex; flex-direction: column; }
+        .calendar-grid {
+            display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin-top: 12px;
+        }
+        .cal-day-header {
+            font-size: 0.65rem; font-weight: 600; color: var(--text-muted); letter-spacing: 0.05em;
+            margin-bottom: 4px;
+        }
+        .cal-date {
+            height: 50px; display: flex; align-items: center; justify-content: center;
+            font-size: 0.85rem; color: var(--text-dim); border-radius: 4px;
+            font-weight: 500; font-family: 'Inter', sans-serif;
+            background: rgba(255,255,255,0.015); border: 1px solid var(--border-glass);
+            transition: var(--transition-smooth);
+        }
+        .cal-date.active {
+            background: var(--text-pure); color: #000;
+            box-shadow: 0 0 10px -2px rgba(255,255,255,0.5); font-weight: 700; border-color: var(--text-pure);
+        }
+        .cal-date.empty {
+            background: transparent; border-color: transparent;
+        }
+        .cal-date:not(.empty):not(.active):hover {
+            border-color: var(--border-glass-strong); background: rgba(255,255,255,0.05); cursor: default;
+        }
+
+        /* Mobile Breakpoint Optimization */
+        @media (max-width: 900px) {
+            header { grid-template-columns: 1fr; gap: 16px; padding: 24px; text-align: center; }
+            .logo-container { justify-content: center; }
+            .header-actions { justify-self: center; flex-direction: column; width: 100%; gap: 12px; }
+            .system-status { justify-content: center; width: 100%; }
+            main { padding: 16px; }
+            .dashboard-layout { gap: 24px; }
+            .dashboard-left { gap: 24px; }
+            .stat-cards { flex-direction: column; gap: 12px; }
+            .stat-card { width: 100%; }
+            .action-grid { grid-template-columns: 1fr; gap: 16px; }
+            .history-header-actions { flex-direction: column; align-items: flex-start; gap: 12px; }
+            #historyPagination { flex-direction: column; width: 100%; }
+            .modal { max-width: 90vw !important; padding: 24px !important; }
+            .form-actions { display: flex; flex-direction: column; gap: 12px; }
+            .btn-action, .btn-submit, .btn-cancel, .btn-cancel[style] { width: 100% !important; flex: none !important; }
+            #cameraVideo, #exitCameraVideo { height: 160px !important; }
+            #qr-reader, #exit-qr-reader { width: 100% !important; max-width: 250px; }
+            .history-layout h2 { font-size: 1.8rem !important; }
+            .login-right-panel { padding: 40px 20px; }
+            .table-container { overflow-x: auto; max-width: 100vw; -webkit-overflow-scrolling: touch; padding-bottom: 8px;}
+            table { min-width: 600px; display: table; }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <canvas id="bg-stars" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; opacity: 0.5;"></canvas>
+
+    <div class="ambient-light light-1"></div>
+    <div class="ambient-light light-2"></div>
+
+    <!-- Login Overlay Split Design -->
+    <div id="loginOverlay">
+        
+        <!-- Left Panel -->
+        <div class="login-left-panel">
+            <div class="login-image-wrap">
+                <div class="login-image-overlay"></div>
+                <!-- Logo Top Right -->
+                <div style="position: absolute; top: 40px; right: 40px;">
+                    <div style="display: flex; align-items: center; gap: 0; margin-left: -16px;">
+                        <img src="/static/img/logo.png" alt="Valetis Logo" style="height: 56px; filter: brightness(0) invert(1); transform: translateX(-5px);">
+                        <h2 style="margin: 0; margin-left: -18px; font-size: 2.2rem; font-weight: 600; letter-spacing: -1px; color: white;">aletis</h2>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="login-info-card">
+                <div class="login-stats">
+                    <div class="login-stat">
+                        <h4>10K+</h4>
+                        <span>Accesos Diarios</span>
+                    </div>
+                    <div class="login-stat">
+                        <h4>100%</h4>
+                        <span>Precisión Algorítmica</span>
+                    </div>
+                </div>
+                <p>Bienvenido a Valetis Spatial, un ecosistema diseñado para operadores de parkings que creen en el poder del diseño para forjar mejores entornos automotrices.</p>
+            </div>
+        </div>
+
+        <!-- Right Panel (Form) -->
+        <div class="login-right-panel">
+            <div class="login-form-container">
+                <h1>Iniciar Sesión</h1>
+                <p>Bienvenido a Valetis Spatial. Ingresa tus credenciales maestras para acceder al control de operaciones vehiculares.</p>
+                
+                <div class="login-form-group">
+                    <label>Usuario Operador*</label>
+                    <input type="text" id="loginUser" class="form-control" style="background:#111; border-color:#222;" placeholder="ej. admin" autocomplete="off">
+                </div>
+                <div class="login-form-group">
+                    <label>Contraseña Maestra*</label>
+                    <input type="password" id="loginPass" class="form-control" style="background:#111; border-color:#222;" placeholder="••••••••" autocomplete="off">
+                </div>
+                
+                <button id="btnSubmitLogin" class="btn-white" style="display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="submitLogin()">Procesar Ingreso</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="appContent" style="display: none; height: 100%; display: flex; flex-direction: column;">
+        <header>
+            <div class="logo-container" style="gap: 0; margin-left: -16px;">
+                <img src="/static/img/logo.png" alt="Valetis Logo" style="height: 56px; filter: brightness(0) invert(1); transform: translateX(-5px);">
+                <h1 style="margin: 0; margin-left: -18px; font-size: 2.2rem; font-weight: 600; letter-spacing: -1px;">aletis</h1>
+            </div>
+            <div class="real-time-clock" id="liveClock">--:--:--</div>
+            <div class="header-actions">
+                <div class="system-status" id="systemStatusBadge">
+                    <div class="status-dot"></div>
+                    <span id="systemStatusText">Sistema Operativo</span>
+                </div>
+                <button class="btn-logout" onclick="logout()" title="Cerrar Sesión">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <div class="container" id="mainUI">
+            <aside class="sidebar">
+                <div class="nav-group">
+                    <div class="sidebar-title">Operaciones</div>
+                    <button class="btn-nav primary" onclick="openModal('entryModal')">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                        Nuevo Ingreso
+                    </button>
+                    <button class="btn-nav" onclick="openModal('paymentModal')">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                        Registrar Pago
+                    </button>
+                    <button class="btn-nav" onclick="openModal('exitModal')">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                        Dar Salida
+                    </button>
+                    <button class="btn-nav" onclick="openModal('ticketModal')">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                        Ver Ticket
+                    </button>
+                </div>
+                <div class="nav-group">
+                    <div class="sidebar-title">Administración</div>
+                    <button class="btn-nav" onclick="downloadReport()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Descargar Registro
+                    </button>
+                    <button class="btn-nav" onclick="openHistoryDashboard()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        Historial Hoy
+                    </button>
+                    <button class="btn-nav" onclick="openModal('forceExitModal')" style="color:var(--status-warn);">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+                        Liberación Manual
+                    </button>
+                    <button class="btn-nav" onclick="manualOpenBarrera(1)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 16 16 12 12 8"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                        Abrir Entrada
+                    </button>
+                    <button class="btn-nav" onclick="manualOpenBarrera(2)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 8 8 12 12 16"/><line x1="16" y1="12" x2="8" y2="12"/></svg>
+                        Abrir Salida
+                    </button>
+                    <button class="btn-nav" onclick="closeDay()" id="btnCerrarCaja" style="color:var(--status-err);">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        Cierre de Caja
+                    </button>
+                    <button class="btn-nav primary" onclick="openDay()" id="btnAbrirCaja" style="display: none; background: var(--status-ok); color: black;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                        Apertura Sistema
+                    </button>
+                </div>
+            </aside>
+
+            <main class="dashboard-content">
+                <div class="dashboard-layout" id="dashboardLayout">
+                    <!-- LEFT COLUMN -->
+                    <div class="dashboard-left">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="label">Espacios Totales</div>
+                                <div class="value" id="statTotal">-</div>
+                            </div>
+                            <div class="stat-card active">
+                                <div class="label">Disponibles Ahora</div>
+                                <div class="value" id="statAvailable">-</div>
+                            </div>
+                            <div class="stat-card busy">
+                                <div class="label">Ocupados</div>
+                                <div class="value" id="statOccupied">-</div>
+                            </div>
+                        </div>
+
+                        <section class="parking-section">
+                            <div class="section-header">
+                                <h2>Monitoreo Espacial</h2>
+                            </div>
+                            <div class="parking-grid" id="parkingGrid"></div>
+                        </section>
+                    </div>
+
+                    <!-- RIGHT COLUMN (CHART) -->
+                    <div class="dashboard-right">
+                        <section class="chart-section" style="margin-top: 0; background: rgba(255,255,255,0.02); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); padding: 32px 32px 16px 32px; position: relative; box-shadow: inset 0 1px 0 rgba(255,255,255,0.05); margin-bottom: 0; height: auto; display: flex; flex-direction: column;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
+                                <div style="display: flex; flex-direction: column; gap: 8px;">
+                                    <div style="font-size: 0.95rem; color: var(--text-muted); font-weight: 500;">Recaudado Hoy</div>
+                                    <div style="font-size: 2.8rem; font-weight: 700; letter-spacing: -2px; color: var(--text-pure);" id="chartTotalRevenue">$ 0.00</div>
+                                </div>
+                                <div style="display: flex; gap: 16px; font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">
+                                    <span style="color: var(--text-pure); border-bottom: 2px solid var(--text-pure); padding-bottom: 4px;">Hora x Hora</span>
+                                </div>
+                            </div>
+                            <div style="height: 280px; width: 100%; position: relative;">
+                                <canvas id="revenueChart"></canvas>
+                            </div>
+                        </section>
+
+                        <section class="calendar-section" style="margin-top: 24px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); padding: 24px 32px 16px 32px; position: relative;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <div style="font-size: 1.1rem; color: var(--text-pure); font-weight: 500;" id="calendarMonthYear">Mes Año</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Calendario</div>
+                            </div>
+                            <div class="calendar-grid">
+                                <div class="cal-day-header">DO</div><div class="cal-day-header">LU</div><div class="cal-day-header">MA</div>
+                                <div class="cal-day-header">MI</div><div class="cal-day-header">JU</div><div class="cal-day-header">VI</div><div class="cal-day-header">SA</div>
+                                <div id="calendarDays" style="display: contents;"></div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+
+                <!-- HISTORY DASHBOARD -->
+                <div class="history-layout" id="historyLayout" style="display: none; height: 100%; flex-direction: column;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                        <h2 style="font-size: 2.2rem; color: var(--text-pure); font-weight: 500;">Historial de Actividad <span style="color:var(--text-dim); font-size: 1.2rem;">(Hoy)</span></h2>
+                        <div style="display: flex; gap: 16px;">
+                            <button class="btn-action" style="width: auto; height: 44px; padding: 0 24px; background: rgba(16, 185, 129, 0.15); color: var(--status-ok); border: 1px solid rgba(16, 185, 129, 0.3); display:flex; align-items:center; justify-content:center; gap: 8px; border-radius: 12px; font-weight: 500;" onclick="window.location.href='/api/export_excel'">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                Excel Completo
+                            </button>
+                            <button class="btn-white" onclick="closeHistoryDashboard()" style="width: auto; height: 44px; margin-top: 0; padding: 0 24px; display:flex; align-items:center; justify-content:center; border-radius: 12px;">Volver al Tablero</button>
+                        </div>
+                    </div>
+                    <div id="historyPagination" style="display: none; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 0 8px;">
+                        <!-- Inserted by JS -->
+                    </div>
+                    <div style="flex: 1; min-height: 0; background: rgba(255,255,255,0.015); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); padding: 32px; display: flex; flex-direction: column;">
+                        <div style="flex: 1; overflow-y: auto; padding-right: 16px;">
+                            <table class="history-table">
+                                <thead><tr><th>Ticket</th><th>Placa</th><th>Entrada</th><th>Salida</th><th>Monto</th><th>Estado</th><th>Detalle</th></tr></thead>
+                                <tbody id="historyTableBodyDashboard"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="entryModal">
+        <div class="modal" style="padding: 40px; border-radius: 20px; max-width: 460px;">
+            <div class="modal-header" style="margin-bottom: 32px;">
+                <h3 class="modal-title" style="font-size: 1.8rem; letter-spacing: -1px;">Nuevo Ingreso</h3>
+                <button class="close-btn" style="background: rgba(255,255,255,0.05); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0;" onclick="closeModal('entryModal')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            
+            <div id="cameraContainer" style="display: none; margin-bottom: 24px;">
+                <video id="cameraVideo" style="width: 100%; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); height: 200px; object-fit: cover; background: #000;" playsinline autoplay></video>
+                <div style="display: flex; gap: 12px; margin-top: 12px;">
+                    <div style="flex:1; color: var(--text-dim); font-size: 0.85rem; padding-top: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="camStatusName">Cámara LPR Activa...</div>
+                    <button class="btn-cancel" style="padding: 0 16px; height: 40px; font-size: 0.85rem; width: auto; border-radius:10px;" onclick="cycleCamera('cameraVideo')">Rotar</button>
+                    <button class="btn-cancel" style="padding: 0 16px; height: 40px; font-size: 0.85rem; width: auto; border-radius:10px;" onclick="closeCameraScanner()">Detener</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Placa del Vehículo</label>
+                <div style="display: flex; gap: 12px;">
+                    <input type="text" id="entryPlate" class="form-control" style="font-size: 1.25rem; font-family: 'JetBrains Mono', monospace; text-transform: uppercase;" placeholder="ABC-123" autocomplete="off">
+                    <button class="btn-cancel" style="width: 52px; height: 52px; padding: 0; display:flex; justify-content:center; align-items:center; border-radius: 12px;" onclick="openCameraScanner()" title="Reabrir Cámara">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom: 32px;">
+                <label>Asignación de Espacio</label>
+                <select id="entrySpot" class="form-control" style="appearance: none;"></select>
+            </div>
+            <div class="ticket-receipt" id="entryReceipt"></div>
+            <div class="form-actions">
+                <button class="btn-cancel" onclick="closeModal('entryModal')" style="flex:1;">Cancelar</button>
+                <button class="btn-submit" onclick="submitEntry()" style="flex:1;">Emitir Ticket</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment -->
+    <div class="modal-overlay" id="paymentModal">
+        <div class="modal" style="padding: 40px; border-radius: 20px; max-width: 460px;">
+            <div class="modal-header" style="margin-bottom: 32px;">
+                <h3 class="modal-title" style="font-size: 1.8rem; letter-spacing: -1px;">Registrar Pago</h3>
+                <button class="close-btn" style="background: rgba(255,255,255,0.05); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0;" onclick="closeModal('paymentModal')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+
+            <div id="qr-reader" style="display: none; border-radius: 12px; overflow: hidden; margin: 0 auto 24px auto; border: 1px solid rgba(255,255,255,0.1); width: 250px; height: 250px;"></div>
+
+            <div class="form-group" style="margin-bottom: 32px;">
+                <label>Identificador de Ticket</label>
+                <div style="display: flex; gap: 12px;">
+                    <input type="text" id="payCode" class="form-control" style="font-size: 1.1rem; font-family: 'JetBrains Mono', monospace; text-transform: uppercase;" placeholder="TKT O PLACA..." autocomplete="off">
+                    <button class="btn-cancel" style="width: 52px; height: 52px; padding: 0; display:flex; justify-content:center; align-items:center; border-radius: 12px;" onclick="startQRScannerScanner()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="12" y1="8" x2="12" y2="16"/></svg></button>
+                </div>
+            </div>
+            
+            <div id="paymentInfoArea" style="display: none; margin-bottom: 24px; background: rgba(255,255,255,0.03); padding: 24px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
+                <label style="color:var(--text-dim); text-transform:uppercase; font-size:0.75rem; letter-spacing:0.1em; display:block; margin-bottom:8px;">Monto Calculado</label>
+                <div style="font-family:'Inter', sans-serif; font-weight: 300; letter-spacing: -0.05em; font-size: 4rem; color: var(--text-pure); line-height:1;" id="payAmount"></div>
+            </div>
+            <div class="ticket-receipt" id="payReceipt"></div>
+            <div class="form-actions" style="justify-content: center;">
+                <button class="btn-submit" id="btnCheckPay" onclick="checkPaymentInfo()" style="width: 100%;">Verificar</button>
+                <button class="btn-submit" id="btnConfirmPay" onclick="submitPayment()" style="display: none; background: var(--status-ok); color: var(--bg-base); width: 100%;">Completar Transacción</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ticket Modal -->
+    <div class="modal-overlay" id="ticketModal">
+        <div class="modal" style="padding: 40px; border-radius: 20px; max-width: 440px;">
+            <div class="modal-header" style="margin-bottom: 32px;">
+                <h3 class="modal-title" style="font-size: 1.8rem; letter-spacing: -1px;">Consultar Ticket</h3>
+                <button class="close-btn" style="background: rgba(255,255,255,0.05); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0;" onclick="closeModal('ticketModal')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div class="form-group">
+                <input type="text" id="viewCode" class="form-control" placeholder="TKT O PLACA..." autocomplete="off">
+            </div>
+            <div class="tracking-timeline" id="viewReceipt" style="margin-top: 32px; display: none;"></div>
+            <div class="form-actions" style="justify-content: center;">
+                <button class="btn-submit" style="width: 100%;" onclick="submitViewTicket()">Buscar Registros</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exit -->
+    <div class="modal-overlay" id="exitModal">
+        <div class="modal" style="padding: 40px; border-radius: 20px; max-width: 460px;">
+            <div class="modal-header" style="margin-bottom: 32px;">
+                <h3 class="modal-title" style="font-size: 1.8rem; letter-spacing: -1px;">Registro Salida</h3>
+                <button class="close-btn" style="background: rgba(255,255,255,0.05); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0;" onclick="closeModal('exitModal')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            
+            <div id="exitCameraContainer" style="display: none; margin-bottom: 24px;">
+                <video id="exitCameraVideo" style="width: 100%; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); height: 200px; object-fit: cover; background: #000;" playsinline autoplay></video>
+                <div style="display: flex; gap: 12px; margin-top: 12px;">
+                    <div style="flex:1; color: var(--text-dim); font-size: 0.85rem; padding-top: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="exitCamStatusName">Cámara LPR Activa...</div>
+                    <button class="btn-cancel" style="padding: 0 16px; height: 40px; font-size: 0.85rem; width: auto; border-radius:10px;" onclick="cycleCamera('exitCameraVideo')">Rotar</button>
+                    <button class="btn-cancel" style="padding: 0 16px; height: 40px; font-size: 0.85rem; width: auto; border-radius:10px;" onclick="closeExitCamera()">Detener</button>
+                </div>
+            </div>
+            <div id="exit-qr-reader" style="display: none; border-radius: 12px; overflow: hidden; margin: 0 auto 24px auto; border: 1px solid rgba(255,255,255,0.1); width: 250px; height: 250px;"></div>
+            
+            <div class="form-group" style="margin-bottom: 32px;">
+                 <label>Ticket o Placa</label>
+                <div style="display: flex; gap: 12px;">
+                    <input type="text" id="exitCode" class="form-control" style="font-size: 1.1rem; font-family: 'JetBrains Mono', monospace; text-transform: uppercase;" placeholder="PLACA O TKT..." autocomplete="off">
+                    <button class="btn-cancel" style="width: 52px; height: 52px; padding: 0; display:flex; justify-content:center; align-items:center; border-radius: 12px;" onclick="startExitCamera()" title="Cámara LPR"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
+                    <button class="btn-cancel" style="width: 52px; height: 52px; padding: 0; display:flex; justify-content:center; align-items:center; border-radius: 12px;" onclick="startExitQRScanner()" title="Escáner QR"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="12" y1="8" x2="12" y2="16"/></svg></button>
+                </div>
+            </div>
+            <div class="form-actions" style="justify-content: center;">
+                <button class="btn-submit" style="width: 100%;" onclick="submitExit()">Procesar Salida</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tracking Detail Modal -->
+    <div class="modal-overlay" id="trackingModal">
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title" style="margin-bottom:0;">Tracking Log</h3>
+                    <div style="font-size:1.1rem; font-family:'JetBrains Mono', monospace; font-weight: 500; color:var(--text-dim);" id="trkTicketTitle">TKT-xxxxx</div>
+                </div>
+                <div style="display:flex; gap:12px; align-items:flex-start;">
+                    <button class="btn-action" style="padding: 10px 16px; font-size:0.8rem; background: rgba(16, 185, 129, 0.2); color: var(--status-ok); border: 1px solid rgba(16, 185, 129, 0.4); display:flex; align-items:center; gap: 8px; width:auto;" id="btnExportTracking">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Exportar a Excel
+                    </button>
+                    <button class="close-btn" onclick="closeModal('trackingModal')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                </div>
+            </div>
+            <div class="tracking-timeline" id="trackingContent">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Ticket Detail Modal -->
+    <div class="modal-overlay" id="ticketDetailModal">
+        <div class="modal" style="text-align: center; max-width: 420px;">
+            <div class="modal-header" style="justify-content: space-between;">
+                <h3 class="modal-title">Espacio</h3>
+                <button class="close-btn" onclick="closeModal('ticketDetailModal')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div style="font-family:'Inter', sans-serif; font-weight: 400; letter-spacing: -0.05em; font-size: 4rem; line-height:1; margin-bottom: 8px;" id="detailPlate"></div>
+            <div style="color: var(--text-dim); margin-bottom: 32px; font-family:'JetBrains Mono'; font-size:0.9rem;" id="detailCode"></div>
+            
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); padding: 20px; border-radius: var(--radius-sm); margin-bottom: 32px; text-align: left;">
+                <p style="color: var(--text-muted); font-size: 0.75rem; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:4px;">Entrada</p>
+                <p style="color: var(--text-pure); font-size: 1rem; font-weight:500;" id="detailEntry">--/--/--</p>
+            </div>
+            <div id="qrcode" style="background: #fff; padding: 24px; border-radius: 24px; display: inline-flex; margin-bottom: 40px; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5);"></div>
+            <button class="btn-action btn-submit" onclick="processPaymentFromDetail()">Registrar Cobro</button>
+        </div>
+    </div>
+
+    <!-- Force Exit Modal -->
+    <div class="modal-overlay" id="forceExitModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" style="color: var(--status-warn);">Liberar Espacio</h3>
+                <button class="close-btn" onclick="closeModal('forceExitModal')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div class="form-group">
+                <select id="forceExitSelect" class="form-control" style="appearance: none;"></select>
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 32px;">Anula el ticket sin transacción financiera.</p>
+            <div class="form-actions">
+                <button class="btn-action btn-cancel" onclick="closeModal('forceExitModal')">Cancelar</button>
+                <button class="btn-action btn-submit" style="background:var(--status-err); color:white;" onclick="submitForceExit()">Confirmar Liberación</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div class="modal-overlay" id="historyModal">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h3 class="modal-title">Actividad Reciente</h3>
+                <button class="close-btn" onclick="closeModal('historyModal')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div class="table-container">
+                <table class="history-table">
+                    <thead><tr><th>Ticket</th><th>Placa</th><th>Entrada</th><th>Salida</th><th>Monto</th><th>Estado</th></tr></thead>
+                    <tbody id="historyTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        const API_BASE = '/api';
+
+        // Core Functions
+        let revenueChartInstance = null;
+
+        async function updateRevenueChart() {
+            try {
+                const res = await fetch(`${API_BASE}/tickets_today`);
+                if (!res.ok) return;
+                const data = await res.json();
+                
+                let totalRevenue = 0;
+                let hourlyRevenue = new Array(24).fill(0);
+                
+                for(let t of data.tickets) {
+                    // Update: Contar la plata en cuanto se paga, no hasta que el auto sale, para feedback real.
+                    // También ignoramos la recaudación si la caja se cerró, para empezar "en limpio".
+                    if (!data.system_closed && t.paid == 1 && t.amount_due > 0 && t.payment_time) {
+                        totalRevenue += t.amount_due;
+                        const date = new Date(t.payment_time);
+                        const hour = date.getHours();
+                        hourlyRevenue[hour] += t.amount_due;
+                    }
+                }
+                
+                document.getElementById('chartTotalRevenue').innerText = `$ ${totalRevenue.toFixed(2)}`;
+                
+                const labels = [];
+                const parsedData = [];
+                const currentHour = new Date().getHours();
+                
+                const startHour = 6;
+                const endHour = Math.max(currentHour + 2, 18);
+                
+                for(let i=startHour; i<=endHour; i++) {
+                    labels.push(`${i}:00`);
+                    parsedData.push(hourlyRevenue[i] || 0);
+                }
+
+                const ctx = document.getElementById('revenueChart').getContext('2d');
+                
+                let gradient = ctx.createLinearGradient(0, 0, 0, 250);
+                gradient.addColorStop(0, 'rgba(255, 255, 255, 0.15)'); // Soft metallic white top
+                gradient.addColorStop(1, 'rgba(255, 255, 255, 0.0)');  // Fade out
+
+                if (revenueChartInstance) {
+                    revenueChartInstance.data.labels = labels;
+                    revenueChartInstance.data.datasets[0].data = parsedData;
+                    revenueChartInstance.update();
+                } else {
+                    revenueChartInstance = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Recaudación $',
+                                data: parsedData,
+                                borderColor: '#FFFFFF', // High contrast white thick line
+                                backgroundColor: gradient,
+                                fill: true,
+                                tension: 0.45, // Soft smooth organic curve like reference
+                                pointBackgroundColor: '#000',
+                                pointBorderColor: '#FFF',
+                                pointBorderWidth: 2,
+                                pointRadius: 4,
+                                pointHoverRadius: 7,
+                                borderWidth: 3.5
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: '#222',
+                                    titleColor: '#fff',
+                                    bodyColor: '#fff',
+                                    bodyFont: { weight: 'bold', size: 14 },
+                                    displayColors: false,
+                                    padding: 12,
+                                    callbacks: {
+                                        label: function(context) { return '$ ' + context.parsed.y.toFixed(2); }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: { grid: { display: false, drawBorder: false }, ticks: { color: '#666', font: { weight: '500' } } },
+                                y: { grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false }, ticks: { color: '#666', maxTicksLimit: 5, callback: function(value) { return '$' + value; } }, min: 0 }
+                            }
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error("Error charting revenue:", e);
+            }
+        }
+
+        async function fetchStatus() {
+            try {
+                const res = await fetch(`${API_BASE}/status`);
+                const data = await res.json();
+                renderDashboard(data);
+                updateRevenueChart();
+            } catch (err) {
+                // Ignore silent errors for UX
+            }
+        }
+
+        function renderDashboard(data) {
+            document.getElementById('statTotal').innerText = data.total_spaces;
+            document.getElementById('statAvailable').innerText = data.available_spaces;
+            document.getElementById('statOccupied').innerText = data.total_spaces - data.available_spaces;
+
+            const grid = document.getElementById('parkingGrid');
+            grid.innerHTML = '';
+            
+            const spotSelect = document.getElementById('entrySpot');
+            spotSelect.innerHTML = '';
+            
+            const forceSelect = document.getElementById('forceExitSelect');
+            forceSelect.innerHTML = '';
+
+            data.spaces.forEach((spotObj, index) => {
+                const spaceNum = index + 1;
+                const isOccupied = spotObj !== null;
+                const displayPlate = isOccupied ? spotObj.plate : 'LIBRE';
+                const ticketCode = isOccupied ? spotObj.code : null;
+
+                const card = document.createElement('div');
+                card.className = `space-card ${isOccupied ? 'occupied' : 'available'}`;
+                card.innerHTML = `
+                    <div class="space-id">${spaceNum.toString().padStart(2, '0')}</div>
+                    <div class="space-status">${displayPlate}</div>
+                `;
+                
+                if (isOccupied) {
+                    card.style.cursor = 'pointer';
+                    card.title = "Clic para ver detalle y QR del ticket";
+                    card.onclick = () => openTicketDetail(ticketCode);
+                }
+
+                grid.appendChild(card);
+
+                if (!isOccupied) {
+                    const opt = document.createElement('option');
+                    opt.value = index;
+                    opt.innerText = `Lugar de Asignación ${spaceNum}`;
+                    spotSelect.appendChild(opt);
+                } else {
+                    const opt = document.createElement('option');
+                    opt.value = ticketCode;
+                    opt.innerText = `Espacio ${spaceNum} — Placa: ${displayPlate}`;
+                    forceSelect.appendChild(opt);
+                }
+            });
+
+            // Status Badge
+            const badge = document.getElementById('systemStatusBadge');
+            const statusText = document.getElementById('systemStatusText');
+            const btnClose = document.getElementById('btnCerrarCaja');
+            const btnOpen = document.getElementById('btnAbrirCaja');
+
+            if (data.system_closed) {
+                badge.classList.add('closed');
+                statusText.innerText = 'Caja Cerrada';
+                btnClose.style.display = 'none';
+                btnOpen.style.display = 'flex';
+            } else {
+                badge.classList.remove('closed');
+                statusText.innerText = 'Caja Abierta';
+                btnClose.style.display = 'flex';
+                btnOpen.style.display = 'none';
+            }
+        }
+
+        // Modal Handlers
+        function openModal(id) {
+            document.getElementById(id).classList.add('active');
+            
+            // Auto activaciones de scanners
+            if(id === 'entryModal') openCameraScanner();
+            if(id === 'exitModal') startExitCamera();
+            if(id === 'paymentModal') startQRScannerScanner();
+            
+            // Clean state
+            if(id === 'entryModal') {
+                document.getElementById('entryPlate').value = '';
+                document.getElementById('entryPlate').focus();
+                document.getElementById('entryReceipt').classList.remove('active');
+            }
+            if(id === 'paymentModal') {
+                document.getElementById('payCode').value = '';
+                document.getElementById('payCode').focus();
+                document.getElementById('paymentInfoArea').style.display = 'none';
+                document.getElementById('btnCheckPay').style.display = 'flex';
+                document.getElementById('btnConfirmPay').style.display = 'none';
+                document.getElementById('payReceipt').classList.remove('active');
+            }
+            if(id === 'exitModal') {
+                document.getElementById('exitCode').value = '';
+                document.getElementById('exitCode').focus();
+            }
+            if(id === 'ticketModal') {
+                document.getElementById('viewCode').value = '';
+                document.getElementById('viewCode').focus();
+                document.getElementById('viewReceipt').style.display = 'none';
+                document.getElementById('viewReceipt').innerHTML = '';
+            }
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+            
+            // Cleanups
+            if(id === 'ticketDetailModal') {
+                document.getElementById('qrcode').innerHTML = '';
+            }
+            if(id === 'exitModal') {
+                if(typeof closeExitCamera === 'function') closeExitCamera();
+                if(typeof exitHtml5QrcodeScanner !== 'undefined' && exitHtml5QrcodeScanner) {
+                    try { exitHtml5QrcodeScanner.clear(); } catch(e){}
+                    const qrR = document.getElementById('exit-qr-reader');
+                    if(qrR) qrR.style.display = 'none';
+                }
+            }
+            if(id === 'paymentModal') {
+                if(typeof html5QrcodeScanner !== 'undefined' && html5QrcodeScanner) {
+                    html5QrcodeScanner.clear();
+                    const qrR = document.getElementById('qr-reader');
+                    if(qrR) qrR.style.display = 'none';
+                }
+            }
+        }
+
+        // Inputs Auto Upper Case
+        const formatInput = (id) => {
+            const el = document.getElementById(id);
+            if(el) {
+                el.addEventListener('input', (e) => {
+                    e.target.value = e.target.value.toUpperCase();
+                });
+            }
+        };
+        ['entryPlate', 'payCode', 'exitCode', 'viewCode'].forEach(formatInput);
+
+        // API Auth
+        async function submitLogin() {
+            const username = document.getElementById('loginUser').value;
+            const password = document.getElementById('loginPass').value;
+
+            if(!username || !password) return showToast('Completa los campos', 'error');
+
+            const btn = document.getElementById('btnSubmitLogin');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
+            btn.style.cursor = 'wait';
+            btn.innerHTML = `<svg width="20" height="20" style="animation: spin 1s linear infinite;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="4.93" x2="19.07" y2="7.76"></line></svg> Autenticando...`;
+
+            // Wait exactly 2 seconds
+            await new Promise(r => setTimeout(r, 2000));
+
+            const res = await fetch(`${API_BASE}/login`, {
+                method: 'POST', body: JSON.stringify({ username, password })
+            });
+
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+            btn.innerHTML = originalText;
+
+            if(!res.ok) {
+                const data = await res.json();
+                showToast(data.error || 'Credenciales inválidas', 'error');
+            } else {
+                const data = await res.json();
+                localStorage.setItem('auth_token', data.token);
+                initDashboard();
+                showToast(data.message, 'success');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('auth_token');
+            document.getElementById('appContent').style.display = 'none';
+            document.getElementById('mainUI').style.display = 'none';
+            document.getElementById('loginOverlay').style.display = 'flex';
+            document.getElementById('loginPass').value = '';
+        }
+
+        function initDashboard() {
+            const token = localStorage.getItem('auth_token');
+            if(token) {
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.getElementById('appContent').style.display = 'block';
+                document.getElementById('mainUI').style.display = 'grid'; // Main container
+                renderCalendar();
+                fetchStatus();
+                updateClock();
+            }
+        }
+
+        // API Actions
+        async function submitEntry() {
+            const plate = document.getElementById('entryPlate').value;
+            const spot = document.getElementById('entrySpot').value;
+
+            if(!plate) return showToast('Ingrese la placa del vehículo', 'error');
+
+            const res = await fetch(`${API_BASE}/entry`, {
+                method: 'POST', body: JSON.stringify({ plate, spot })
+            });
+            const data = await res.json();
+
+            if (!res.ok) showToast(data.error, 'error');
+            else {
+                showToast('Ingreso registrado con éxito', 'success');
+                const rx = document.getElementById('entryReceipt');
+                rx.innerHTML = `TICKET REF: ${data.ticket.code}\nPLACA ASOC: ${data.ticket.plate}\nASIGNACIÓN: ESPACIO ${data.ticket.spot + 1}`;
+                rx.classList.add('active');
+                fetchStatus();
+            }
+        }
+
+        async function submitViewTicket() {
+            const code = document.getElementById('viewCode').value;
+            if(!code) return showToast('Requerido', 'error');
+
+            const res = await fetch(`${API_BASE}/ticket`, {
+                method: 'POST', body: JSON.stringify({ code })
+            });
+            const data = await res.json();
+
+            if (!res.ok) showToast(data.error, 'error');
+            else {
+                const t = data.ticket;
+                const container = document.getElementById('viewReceipt');
+                container.style.display = 'block';
+                container.innerHTML = ''; 
+
+                const entryTime = new Date(t.entry_time).toLocaleString();
+                
+                // Paso 1: Ingreso
+                container.innerHTML += `
+                    <div class="trk-point completed">
+                        <div class="trk-title">Vehículo Ingresado <span class="trk-time">${entryTime}</span></div>
+                        <div class="trk-desc">Placa Registrada: <strong>${t.plate}</strong><br>Asignado en el Cajón #${t.space_index === null ? 'Exterior' : t.space_index}</div>
+                    </div>
+                `;
+
+                // Paso 2: Pago
+                if (t.paid) {
+                    const payTime = t.payment_time ? new Date(t.payment_time).toLocaleString() : 'N/A';
+                    container.innerHTML += `
+                        <div class="trk-point completed">
+                            <div class="trk-title">Transacción Procesada <span class="trk-time">${payTime}</span></div>
+                            <div class="trk-desc">Monto Pagado: <strong>$${t.amount_due.toFixed(2)} USD</strong><br>Ticket #${t.code}</div>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML += `
+                        <div class="trk-point active">
+                            <div class="trk-title">Deuda Vigente <span class="trk-time">--</span></div>
+                            <div class="trk-desc">El vehículo aún se encuentra activo.<br>Acumulado Aprox: <strong>$${t.amount_due.toFixed(2)}</strong></div>
+                        </div>
+                    `;
+                }
+
+                // Paso 3: Salida
+                if (t.status === 'completado' || t.exit_time) {
+                    const exitTime = t.exit_time ? new Date(t.exit_time).toLocaleString() : 'N/A';
+                    container.innerHTML += `
+                        <div class="trk-point completed">
+                            <div class="trk-title">Salida Autorizada <span class="trk-time">${exitTime}</span></div>
+                            <div class="trk-desc">El vehículo abandonó el parqueo de forma exitosa.</div>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML += `
+                        <div class="trk-point pending">
+                            <div class="trk-title">Salida Pendiente <span class="trk-time">--</span></div>
+                            <div class="trk-desc">El vehículo requiere pase de retiro validado.</div>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        async function checkPaymentInfo() {
+            const code = document.getElementById('payCode').value;
+            if(!code) return showToast('Requerido', 'error');
+
+            const res = await fetch(`${API_BASE}/payment_info`, {
+                method: 'POST', body: JSON.stringify({ code })
+            });
+            const data = await res.json();
+
+            if (!res.ok) showToast(data.error, 'error');
+            else {
+                document.getElementById('paymentInfoArea').style.display = 'block';
+                document.getElementById('payAmount').innerText = `$${data.amount.toFixed(2)}`;
+                document.getElementById('btnCheckPay').style.display = 'none';
+                document.getElementById('btnConfirmPay').style.display = 'flex';
+            }
+        }
+
+
+        async function submitPayment() {
+            const code = document.getElementById('payCode').value;
+            const res = await fetch(`${API_BASE}/payment`, {
+                method: 'POST', body: JSON.stringify({ code, confirm: true })
+            });
+            const data = await res.json();
+
+            if (!res.ok) showToast(data.error, 'error');
+            else {
+                showToast('Transacción Procesada', 'success');
+                const rx = document.getElementById('payReceipt');
+                rx.innerHTML = `VERIFICADO ✅\nAUTH TOKEN: ${data.token}`;
+                rx.classList.add('active');
+                document.getElementById('btnConfirmPay').style.display = 'none';
+            }
+        }
+
+        async function submitExit() {
+            const code = document.getElementById('exitCode').value;
+            if(!code) return showToast('Requerido', 'error');
+
+            const res = await fetch(`${API_BASE}/exit`, {
+                method: 'POST', body: JSON.stringify({ code })
+            });
+            const data = await res.json();
+
+            if (!res.ok) showToast(data.error, 'error');
+            else {
+                showToast('Vehículo validado. Barrera Abierta. Buen viaje.', 'success');
+                fetchStatus();
+                setTimeout(() => closeModal('exitModal'), 1000);
+            }
+        }
+
+        // --------- CÁMARA DE SALIDA LPR ---------
+        let exitVideoStream = null;
+        let exitScanInterval = null;
+        let exitHtml5QrcodeScanner = null;
+
+        function startExitQRScanner() {
+            closeExitCamera(); // stop LPR if active
+            const qrReader = document.getElementById('exit-qr-reader');
+            if (qrReader.style.display === 'block') {
+                if(exitHtml5QrcodeScanner) {
+                    try{ exitHtml5QrcodeScanner.clear(); }catch(e){}
+                }
+                qrReader.style.display = 'none';
+                return;
+            }
+            
+            qrReader.style.display = 'block';
+            
+            if(!exitHtml5QrcodeScanner) {
+                exitHtml5QrcodeScanner = new Html5QrcodeScanner(
+                    "exit-qr-reader", { fps: 10, qrbox: {width: 250, height: 250} }, false);
+            }
+            
+            exitHtml5QrcodeScanner.render((decodedText, decodedResult) => {
+                if(window.isScanningExitQR) return;
+                window.isScanningExitQR = true;
+
+                showToast("Código QR Leído. Abriendo en 2s...", "success");
+                document.getElementById('exitCode').value = decodedText;
+                
+                const qrReader = document.getElementById('exit-qr-reader');
+                qrReader.style.border = "4px solid var(--status-success)";
+                
+                setTimeout(() => {
+                    try{ exitHtml5QrcodeScanner.clear(); }catch(e){}
+                    qrReader.style.display = 'none';
+                    qrReader.style.border = "1px solid var(--status-success)";
+                    submitExit();
+                    window.isScanningExitQR = false;
+                }, 2000);
+            }, (errorMessage) => {
+                // Silencioso
+            });
+        }
+
+        async function startExitCamera() {
+            // Detener QR si está activo
+            if(typeof exitHtml5QrcodeScanner !== 'undefined' && exitHtml5QrcodeScanner) {
+                try { exitHtml5QrcodeScanner.clear(); } catch(e){}
+                document.getElementById('exit-qr-reader').style.display = 'none';
+            }
+
+            const container = document.getElementById('exitCameraContainer');
+            const video = document.getElementById('exitCameraVideo');
+            container.style.display = 'block';
+
+            try {
+                exitVideoStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { ideal: 'environment' } }
+                });
+                video.srcObject = exitVideoStream;
+
+                exitScanInterval = setInterval(() => {
+                    captureAndScanExit();
+                }, 4000);
+
+            } catch (err) {
+                showToast('No se pudo acceder a la cámara.', 'error');
+                container.style.display = 'none';
+            }
+        }
+
+        function closeExitCamera() {
+            if(exitScanInterval) clearInterval(exitScanInterval);
+            if(exitVideoStream) {
+                exitVideoStream.getTracks().forEach(track => track.stop());
+                exitVideoStream = null;
+            }
+            const c = document.getElementById('exitCameraContainer');
+            if(c) c.style.display = 'none';
+        }
+
+        async function captureAndScanExit() {
+            const video = document.getElementById('exitCameraVideo');
+            if(!video || !exitVideoStream) return;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const b64 = canvas.toDataURL('image/jpeg', 0.8);
+
+            try {
+                const res = await fetch(`${API_BASE}/recognize_plate`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ image: b64 })
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    if(data.plate) {
+                        if(exitScanInterval) clearInterval(exitScanInterval);
+                        
+                        showToast(`Placa detectada: ${data.plate}. Verificando en 2s...`, 'success');
+                        document.getElementById('exitCode').value = data.plate;
+                        
+                        const container = document.getElementById('exitCameraContainer');
+                        if(container) container.style.border = "4px solid var(--status-success)";
+                        
+                        setTimeout(() => {
+                            closeExitCamera();
+                            if(container) container.style.border = "none";
+                            submitExit();
+                        }, 2000);
+                    }
+                }
+            } catch (e) {}
+        }
+        // ----------------------------------------
+
+        async function openTicketDetail(code) {
+            const res = await fetch(`${API_BASE}/ticket`, {
+                method: 'POST', body: JSON.stringify({ code })
+            });
+            const data = await res.json();
+            if (!res.ok) return showToast(data.error, 'error');
+
+            document.getElementById('detailPlate').innerText = data.ticket.plate;
+            document.getElementById('detailEntry').innerText = new Date(data.ticket.entry_time).toLocaleString();
+            document.getElementById('detailCode').innerText = data.ticket.code;
+
+            // Generar el codigo QR
+            const qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = '';
+            
+            if (typeof QRCode !== 'undefined') {
+                new QRCode(qrContainer, {
+                    text: data.ticket.code, // Guardamos el código maestro en el QR
+                    width: 150,
+                    height: 150,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff"
+                });
+            }
+
+            openModal('ticketDetailModal');
+        }
+
+        function processPaymentFromDetail() {
+            const code = document.getElementById('detailCode').innerText;
+            closeModal('ticketDetailModal');
+            openModal('paymentModal');
+            document.getElementById('payCode').value = code;
+            checkPaymentInfo();
+        }
+
+        // --------- MANEJO DEL ESCANER DE QR -------------
+        let html5QrcodeScanner = null;
+
+        function startQRScannerScanner() {
+            const qrReader = document.getElementById('qr-reader');
+            if (qrReader.style.display === 'block') {
+                if(html5QrcodeScanner) {
+                    html5QrcodeScanner.clear();
+                }
+                qrReader.style.display = 'none';
+                return;
+            }
+            
+            qrReader.style.display = 'block';
+            
+            if(!html5QrcodeScanner) {
+                html5QrcodeScanner = new Html5QrcodeScanner(
+                    "qr-reader", { fps: 10, qrbox: {width: 250, height: 250} }, false);
+            }
+            
+            html5QrcodeScanner.render((decodedText, decodedResult) => {
+                if(window.isScanningPayQR) return;
+                window.isScanningPayQR = true;
+
+                showToast("Código escaneado. Consultando en 2s...", "success");
+                document.getElementById('payCode').value = decodedText;
+                
+                const qrReader = document.getElementById('qr-reader');
+                qrReader.style.border = "4px solid var(--status-success)";
+                
+                setTimeout(() => {
+                    try{ html5QrcodeScanner.clear(); }catch(e){}
+                    qrReader.style.display = 'none';
+                    qrReader.style.border = "1px solid var(--accent-indigo)";
+                    checkPaymentInfo();
+                    window.isScanningPayQR = false;
+                }, 2000);
+            }, (errorMessage) => {
+                // Silencioso, escanea varios frames
+            });
+        }
+        // ------------------------------------------------
+
+        async function manualOpenBarrera(servo) {
+            const endpoint = servo === 1 ? '/api/manual_entry' : '/api/manual_exit';
+            const label = servo === 1 ? 'Entrada (Servo 1)' : 'Salida (Servo 2)';
+            try {
+                const res = await fetch(API_BASE + (servo === 1 ? '/manual_entry' : '/manual_exit'), { method: 'POST', body: '{}' });
+                const data = await res.json();
+                if (res.ok) showToast('Barrera ' + label + ' abierta.', 'success');
+                else showToast(data.error || 'Error al abrir barrera.', 'error');
+            } catch (e) {
+                showToast('Error de conexion.', 'error');
+            }
+        }
+
+        async function submitForceExit() {
+            const code = document.getElementById('forceExitSelect').value;
+            if(!code) return showToast('No hay espacios ocupados para liberar', 'error');
+
+            const res = await fetch(`${API_BASE}/force_exit`, {
+                method: 'POST', body: JSON.stringify({ code })
+            });
+            const data = await res.json();
+
+            if (!res.ok) showToast(data.error, 'error');
+            else {
+                showToast('Espacio liberado exitosamente.', 'success');
+                fetchStatus();
+                closeModal('forceExitModal');
+            }
+        }
+
+        async function downloadReport() {
+            const res = await fetch(`${API_BASE}/download_report`);
+            const data = await res.json();
+            showToast('Archivo de registro extraído', 'success');
+        }
+
+        let currentHistoryTickets = [];
+        let currentHistoryPage = 1;
+        const HISTORY_PAGE_SIZE = 12;
+
+        async function openHistoryDashboard() {
+            const dash = document.getElementById('dashboardLayout');
+            const hist = document.getElementById('historyLayout');
+            dash.style.display = 'none';
+            hist.style.display = 'flex';
+            
+            hist.style.animation = 'none';
+            hist.offsetHeight; // Force reflow
+            hist.style.animation = 'fadeRouteIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards';
+
+            const res = await fetch(`${API_BASE}/tickets_today`);
+            if (res.ok) {
+                const data = await res.json();
+                currentHistoryTickets = data.tickets.reverse(); // Mostrar más recientes primero
+                currentHistoryPage = 1;
+                renderHistoryDashboardPage();
+            }
+        }
+
+        function closeHistoryDashboard() {
+            const dash = document.getElementById('dashboardLayout');
+            const hist = document.getElementById('historyLayout');
+            hist.style.display = 'none';
+            dash.style.display = 'grid';
+
+            dash.style.animation = 'none';
+            dash.offsetHeight; // Force reflow
+            dash.style.animation = 'fadeRouteIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards';
+        }
+
+        function renderHistoryDashboardPage() {
+            const tbody = document.getElementById('historyTableBodyDashboard');
+            tbody.innerHTML = '';
+            
+            if(currentHistoryTickets.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-secondary); padding: 64px;">No hay tickets registrados hoy</td></tr>';
+                document.getElementById('historyPagination').style.display = 'none';
+                return;
+            }
+
+            const startIdx = (currentHistoryPage - 1) * HISTORY_PAGE_SIZE;
+            const endIdx = startIdx + HISTORY_PAGE_SIZE;
+            const pageTickets = currentHistoryTickets.slice(startIdx, endIdx);
+
+            pageTickets.forEach(t => {
+                const entry = new Date(t.entry_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const exit = t.exit_time ? new Date(t.exit_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--:--';
+                
+                let StatusBadge = '';
+                if(t.status === 'activo') StatusBadge = '<span class="badge active">ACTIVO</span>';
+                else if(t.status === 'completado') StatusBadge = '<span class="badge completed">FINALIZADO</span>';
+                else StatusBadge = '<span class="badge unpaid">OTRO</span>';
+
+                const PayStatus = t.paid ? `<span style="color:var(--status-ok);">$${t.amount_due.toFixed(2)} pagado</span>` : `$${t.amount_due.toFixed(2)}`;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-family:'JetBrains Mono';">${t.code}</td>
+                    <td>${t.plate}</td>
+                    <td>${entry}</td>
+                    <td>${exit}</td>
+                    <td>${PayStatus}</td>
+                    <td>${StatusBadge}</td>
+                    <td>
+                        <button onclick="viewTicketFromHistory('${t.code}')" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); border-radius: 4px; padding: 6px 12px; cursor: pointer; color: var(--text-pure); transition: var(--transition-smooth); display:flex; align-items:center; gap: 8px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            Ver
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            renderPaginationControls();
+        }
+
+        function renderPaginationControls() {
+            const totalPages = Math.ceil(currentHistoryTickets.length / HISTORY_PAGE_SIZE);
+            const paginationContainer = document.getElementById('historyPagination');
+            paginationContainer.style.display = totalPages > 1 ? 'flex' : 'none';
+            
+            let btnPrevStyle = currentHistoryPage === 1 ? 'opacity:0.3; cursor:not-allowed;' : '';
+            let btnNextStyle = currentHistoryPage === totalPages ? 'opacity:0.3; cursor:not-allowed;' : '';
+
+            paginationContainer.innerHTML = `
+                <button class="btn-action" style="padding: 8px 16px; font-size: 0.85rem; width: auto; ${btnPrevStyle}" onclick="changeHistoryPage(-1)" ${currentHistoryPage === 1 ? 'disabled' : ''}>Anterior</button>
+                <span style="font-size: 1rem; color: var(--text-muted); font-weight: 500;">Página ${currentHistoryPage} de ${totalPages}</span>
+                <button class="btn-action" style="padding: 8px 16px; font-size: 0.85rem; width: auto; ${btnNextStyle}" onclick="changeHistoryPage(1)" ${currentHistoryPage === totalPages ? 'disabled' : ''}>Siguiente</button>
+            `;
+        }
+
+        function changeHistoryPage(dir) {
+            currentHistoryPage += dir;
+            renderHistoryDashboardPage();
+        }
+
+        async function viewTicketFromHistory(code) {
+            const res = await fetch(`${API_BASE}/ticket`, { method: 'POST', body: JSON.stringify({ code }) });
+            if (!res.ok) return showToast('No data', 'error');
+            const data = await res.json();
+            const t = data.ticket;
+
+            document.getElementById('trkTicketTitle').innerText = code;
+            document.getElementById('btnExportTracking').onclick = () => window.location.href = `/api/export_excel?code=${code}`;
+            
+            const container = document.getElementById('trackingContent');
+            container.innerHTML = ''; // clear
+
+            const entryTime = new Date(t.entry_time).toLocaleString();
+            
+            // Paso 1: Ingreso
+            container.innerHTML += `
+                <div class="trk-point completed">
+                    <div class="trk-title">Vehículo Ingresado <span class="trk-time">${entryTime}</span></div>
+                    <div class="trk-desc">Placa Registrada: <strong>${t.plate}</strong><br>Asignado en el Cajón #${t.space_index === null ? 'Exterior' : t.space_index}</div>
+                </div>
+            `;
+
+            // Paso 2: Pago
+            if (t.paid) {
+                const payTime = t.payment_time ? new Date(t.payment_time).toLocaleString() : 'N/A';
+                container.innerHTML += `
+                    <div class="trk-point completed">
+                        <div class="trk-title">Transacción Procesada <span class="trk-time">${payTime}</span></div>
+                        <div class="trk-desc">Monto Pagado: <strong>$${t.amount_due.toFixed(2)} USD</strong><br>Token de referncia adjunto.</div>
+                    </div>
+                `;
+            } else {
+                container.innerHTML += `
+                    <div class="trk-point active">
+                        <div class="trk-title">Deuda Vigente <span class="trk-time">--</span></div>
+                        <div class="trk-desc">El vehículo aún se encuentra dentro del recinto.<br>Acumulado Aprox: <strong>$${t.amount_due.toFixed(2)}</strong></div>
+                    </div>
+                `;
+            }
+
+            // Paso 3: Salida
+            if (t.status === 'completado' || t.exit_time) {
+                const exitTime = t.exit_time ? new Date(t.exit_time).toLocaleString() : 'N/A';
+                container.innerHTML += `
+                    <div class="trk-point completed">
+                        <div class="trk-title">Salida Autorizada <span class="trk-time">${exitTime}</span></div>
+                        <div class="trk-desc">El vehículo abandonó el parque parqueo de forma exitosa.</div>
+                    </div>
+                `;
+            } else {
+                 container.innerHTML += `
+                    <div class="trk-point">
+                        <div class="trk-title" style="color:var(--text-dim);">Esperando Salida <span class="trk-time">--</span></div>
+                    </div>
+                `;
+            }
+
+            openModal('trackingModal');
+        }
+
+        async function closeDay() {
+            if(!confirm('¿Confirmar cierre de caja total?')) return;
+            const res = await fetch(`${API_BASE}/close_day`, { method: 'POST' });
+            const data = await res.json();
+            
+            if(!res.ok) showToast(data.error, 'error');
+            else {
+                showToast('Caja Cerrada Exitosamente', 'success');
+                fetchStatus();
+            }
+        }
+
+        async function openDay() {
+            const res = await fetch(`${API_BASE}/open_day`, { method: 'POST' });
+            const data = await res.json();
+            
+            if(!res.ok) showToast(data.error, 'error');
+            else {
+                showToast('Caja Abierta Exitosamente', 'success');
+                fetchStatus();
+            }
+        }
+
+        // Toasts
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const iconSvg = type === 'success' 
+                ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>'
+                : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+
+            toast.innerHTML = `
+                <div class="toast-icon">${iconSvg}</div>
+                <div class="toast-content">${message}</div>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
+        }
+
+        function renderCalendar() {
+            const container = document.getElementById('calendarDays');
+            const header = document.getElementById('calendarMonthYear');
+            if(!container || !header) return;
+
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            const today = now.getDate();
+
+            const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+            header.innerText = `${monthNames[month]} ${year}`;
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            container.innerHTML = '';
+
+            for(let i=0; i<firstDay; i++) {
+                const empty = document.createElement('div');
+                empty.className = 'cal-date empty';
+                container.appendChild(empty);
+            }
+
+            for(let i=1; i<=daysInMonth; i++) {
+                const day = document.createElement('div');
+                day.className = `cal-date ${i === today ? 'active' : ''}`;
+                day.innerText = i;
+                container.appendChild(day);
+            }
+        }
+
+        function updateClock() {
+            const now = new Date();
+            const timeOpts = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+            const dateOpts = { weekday: 'long', day: 'numeric', month: 'short' };
+            
+            let timeStr = now.toLocaleTimeString([], timeOpts);
+            let dateStr = now.toLocaleDateString('es-ES', dateOpts);
+            // Capitalize first letter of weekday
+            dateStr = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+            
+            document.getElementById('liveClock').innerHTML = `<span style="font-weight:700; color:white;">${timeStr}</span> <span style="font-size:0.85rem; opacity:0.7; margin-left:8px;">${dateStr}</span>`;
+        }
+
+        // Camera Scanning Logic
+        let videoStream = null;
+        let scanInterval = null;
+        let currentDeviceId = null;
+
+        async function getNextVideoDevice() {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoDevices = devices.filter(d => d.kind === 'videoinput');
+            if (videoDevices.length === 0) return null;
+            
+            let currentIndex = videoDevices.findIndex(d => d.deviceId === currentDeviceId);
+            let nextIndex = (currentIndex + 1) % videoDevices.length;
+            
+            return videoDevices[nextIndex];
+        }
+
+        async function cycleCamera(videoId) {
+            const nextDevice = await getNextVideoDevice();
+            if (!nextDevice) return;
+            
+            currentDeviceId = nextDevice.deviceId;
+            
+            if (videoId === 'cameraVideo') {
+                if (videoStream) { videoStream.getTracks().forEach(t => t.stop()); }
+                videoStream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: currentDeviceId } } });
+                document.getElementById('cameraVideo').srcObject = videoStream;
+                document.getElementById('camStatusName').innerText = nextDevice.label || "Cámara Alterna ("+currentDeviceId.substring(0,4)+")";
+            } else if (videoId === 'exitCameraVideo') {
+                if (exitVideoStream) { exitVideoStream.getTracks().forEach(t => t.stop()); }
+                exitVideoStream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: currentDeviceId } } });
+                document.getElementById('exitCameraVideo').srcObject = exitVideoStream;
+                document.getElementById('exitCamStatusName').innerText = nextDevice.label || "Cámara Alterna ("+currentDeviceId.substring(0,4)+")";
+            }
+        }
+
+        async function openCameraScanner() {
+            const container = document.getElementById('cameraContainer');
+            const video = document.getElementById('cameraVideo');
+            container.style.display = 'block';
+
+            try {
+                // Request back camera (environment) if available
+                videoStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: { ideal: 'environment' } } 
+                });
+                video.srcObject = videoStream;
+
+                // Empezar a escanear automáticamente cada 5 segundos para que la cámara enfoque bien
+                scanInterval = setInterval(() => {
+                    captureAndScan();
+                }, 5000);
+
+            } catch (err) {
+                showToast('No se pudo acceder a la cámara. Revisa permisos o conexión USB.', 'error');
+                console.error("Camera access error:", err);
+                closeCameraScanner();
+            }
+        }
+
+        function closeCameraScanner() {
+            const container = document.getElementById('cameraContainer');
+            const video = document.getElementById('cameraVideo');
+            
+            if (scanInterval) {
+                clearInterval(scanInterval);
+                scanInterval = null;
+            }
+
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+            video.srcObject = null;
+            container.style.display = 'none';
+        }
+
+        async function captureAndScan() {
+            const video = document.getElementById('cameraVideo');
+            if(!videoStream) return;
+
+            // Create canvas and draw current video frame
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Get base64 image (jpeg)
+            const imageData = canvas.toDataURL('image/jpeg', 0.8);
+
+            // Toast de silencioso para no spam
+            // showToast('Analizando...', 'success');
+
+            try {
+                const res = await fetch(`${API_BASE}/recognize_plate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: imageData })
+                });
+
+                const data = await res.json();
+                
+                if(res.ok) {
+                    if(typeof scanInterval !== 'undefined' && scanInterval) clearInterval(scanInterval);
+                    
+                    document.getElementById('entryPlate').value = data.plate;
+                    showToast(`Placa ${data.plate} OK. Generando Ticket en 2s...`, 'success');
+                    
+                    const container = document.getElementById('cameraContainer');
+                    if(container) container.style.border = "4px solid var(--status-success)";
+
+                    setTimeout(() => {
+                        closeCameraScanner();
+                        if(container) container.style.border = "none";
+                        submitEntry();
+                    }, 2000);
+                } else {
+                    showToast(data.error || "Error al leer placa", "error");
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Cleanup camera when closing entry modal
+        const originalCloseModal = closeModal;
+        closeModal = function(id) {
+            if (id === 'entryModal') {
+                closeCameraScanner();
+            }
+            originalCloseModal(id);
+        }
+
+        // Bootstrap
+        initDashboard();
+        setInterval(() => {
+            if(localStorage.getItem('auth_token')) fetchStatus();
+        }, 3000);
+        setInterval(() => {
+            if(localStorage.getItem('auth_token')) updateClock();
+        }, 1000);
+
+        // Starfield Generator
+        (function initStars() {
+            const canvas = document.getElementById('bg-stars');
+            const ctx = canvas.getContext('2d');
+            let stars = [];
+            
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            class Star {
+                constructor() { this.reset(); }
+                reset() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.size = Math.random() * 1.5 + 0.3;
+                    this.speedY = -(Math.random() * 0.2 + 0.02);
+                    this.speedX = (Math.random() - 0.5) * 0.05;
+                    this.alpha = Math.random() * 0.8 + 0.1;
+                    this.alphaChange = (Math.random() - 0.5) * 0.01;
+                }
+                update() {
+                    this.y += this.speedY;
+                    this.x += this.speedX;
+                    this.alpha += this.alphaChange;
+                    if (this.alpha <= 0.1 || this.alpha >= 0.9) this.alphaChange = -this.alphaChange;
+                    if (this.y < 0) {
+                        this.y = canvas.height;
+                        this.x = Math.random() * canvas.width;
+                    }
+                }
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha})`;
+                    ctx.fill();
+                }
+            }
+
+            for (let i = 0; i < 150; i++) stars.push(new Star());
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                stars.forEach(s => { s.update(); s.draw(); });
+                requestAnimationFrame(animate);
+            }
+            animate();
+        })();
+    </script>
+</body>
+</html>

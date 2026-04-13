@@ -1,0 +1,66 @@
+=== CIERRE DE CAJA / DIA ===
+Fecha: 2026-04-04
+Hora de generación: 17:11:53
+
+Codigo: TKT-24BD1B90
+Placa: CYP-123
+Hora entrada: 2026-04-04 17:06:24
+Hora salida: Aún estacionado
+Tiempo estacionado: 0h 5min
+Espacio: 1
+Estado: ESTACIONADO
+Pagado: No
+Monto: $0.00
+----------------------------------------
+Codigo: TKT-A2C7A4A3
+Placa: DMX-789
+Hora entrada: 2026-04-04 17:06:41
+Hora salida: Aún estacionado
+Tiempo estacionado: 0h 5min
+Espacio: 2
+Estado: ESTACIONADO
+Pagado: No
+Monto: $0.00
+----------------------------------------
+Codigo: TKT-30EF6FD4
+Placa: DMX-789
+Hora entrada: 2026-04-04 17:08:22
+Hora salida: Aún estacionado
+Tiempo estacionado: 0h 3min
+Espacio: 3
+Estado: ESTACIONADO
+Pagado: No
+Monto: $0.00
+----------------------------------------
+Codigo: TKT-EC9DEAD7
+Placa: CDMX789GHI
+Hora entrada: 2026-04-04 17:10:17
+Hora salida: Aún estacionado
+Tiempo estacionado: 0h 1min
+Espacio: 4
+Estado: ESTACIONADO
+Pagado: No
+Monto: $0.00
+----------------------------------------
+Codigo: TKT-727C57EB
+Placa: P123ABC
+Hora entrada: 2026-04-04 17:11:09
+Hora salida: Aún estacionado
+Tiempo estacionado: 0h 0min
+Espacio: 5
+Estado: ESTACIONADO
+Pagado: No
+Monto: $0.00
+----------------------------------------
+Codigo: TKT-6213FA2A
+Placa: P123ABC
+Hora entrada: 2026-04-04 17:11:12
+Hora salida: Aún estacionado
+Tiempo estacionado: 0h 0min
+Espacio: 6
+Estado: ESTACIONADO
+Pagado: No
+Monto: $0.00
+----------------------------------------
+
+TOTAL COBRADO DEL DIA: $0.00

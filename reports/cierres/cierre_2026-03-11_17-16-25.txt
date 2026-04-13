@@ -1,0 +1,16 @@
+=== CIERRE DE CAJA / DIA ===
+=== REGISTRO DEL DIA ===
+Fecha: 2026-03-11
+
+Codigo: TKT-CA30EC52
+Placa: 4456
+Hora entrada: 2026-03-11 17:12:51
+Hora salida: 2026-03-11 17:13:49
+Tiempo estacionado: 0h 0min
+Espacio: 2
+Estado: SALIDO
+Pagado: Si
+Monto: $0.50
+----------------------------------------
+
+TOTAL COBRADO DEL DIA: $0.50

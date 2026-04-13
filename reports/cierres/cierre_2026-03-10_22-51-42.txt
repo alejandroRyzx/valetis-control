@@ -1,0 +1,146 @@
+=== CIERRE DE CAJA / DIA ===
+=== REGISTRO DEL DIA ===
+Fecha: 2026-03-10
+
+Codigo: TKT-493B5A67
+Placa: 234
+Hora entrada: 2026-03-10 18:08:40
+Hora salida: 2026-03-10 18:13:01
+Tiempo estacionado: 0h 4min
+Espacio: 3
+Estado: SALIDO
+Pagado: Si
+Monto: $0.50
+----------------------------------------
+Codigo: TKT-C68C9C59
+Placa: 456
+Hora entrada: 2026-03-10 18:08:57
+Hora salida: 2026-03-10 18:12:14
+Tiempo estacionado: 0h 3min
+Espacio: 1
+Estado: SALIDO
+Pagado: Si
+Monto: $0.50
+----------------------------------------
+Codigo: TKT-A0BA0793
+Placa: 567
+Hora entrada: 2026-03-10 18:09:07
+Hora salida: 2026-03-10 18:22:18
+Tiempo estacionado: 0h 13min
+Espacio: 6
+Estado: SALIDO
+Pagado: Si
+Monto: $0.50
+----------------------------------------
+Codigo: TKT-7C0C8A8B
+Placa: 333
+Hora entrada: 2026-03-10 18:13:04
+Hora salida: 2026-03-10 18:13:18
+Tiempo estacionado: 0h 0min
+Espacio: 1
+Estado: SALIDO
+Pagado: Si
+Monto: $0.50
+----------------------------------------
+Codigo: TKT-12DAD2B0
+Placa: 343
+Hora entrada: 2026-03-10 18:22:23
+Hora salida: 2026-03-10 18:22:49
+Tiempo estacionado: 0h 0min
+Espacio: 1
+Estado: SALIDO
+Pagado: Si
+Monto: $0.50
+----------------------------------------
+Codigo: TKT-708C5CD1
+Placa: 34
+Hora entrada: 2026-03-10 18:22:30
+Hora salida: 2026-03-10 18:23:38
+Tiempo estacionado: 0h 1min
+Espacio: 3
+Estado: SALIDO
+Pagado: Si
+Monto: $0.50
+----------------------------------------
+Codigo: TKT-06FAEAC7
+Placa: ABC-678965
+Hora entrada: 2026-03-10 21:32:05
+Hora salida: 2026-03-10 21:32:39
+Tiempo estacionado: 0h 0min
+Espacio: 3
+Estado: SALIDO
+Pagado: Si
+Monto: $0.50
+----------------------------------------
+Codigo: TKT-A756F5D9
+Placa: TKH-0987
+Hora entrada: 2026-03-10 21:40:14
+Hora salida: 2026-03-10 21:40:46
+Tiempo estacionado: 0h 0min
+Espacio: 1
+Estado: SALIDO
+Pagado: Si
+Monto: $0.50
+----------------------------------------
+Codigo: TKT-3923FDD8
+Placa: TKH-0987
+Hora entrada: 2026-03-10 21:40:19
+Hora salida: 2026-03-10 21:43:33
+Tiempo estacionado: 0h 3min
+Espacio: 2
+Estado: SALIDO
+Pagado: Si
+Monto: $0.50
+----------------------------------------
+Codigo: TKT-54ECA9E7
+Placa: TK-9086
+Hora entrada: 2026-03-10 21:50:15
+Hora salida: 2026-03-10 22:48:00
+Tiempo estacionado: 0h 57min
+Espacio: 3
+Estado: PAGADO
+Pagado: Si
+Monto: $1.02
+----------------------------------------
+Codigo: TKT-B48CCF19
+Placa: TK-9086
+Hora entrada: 2026-03-10 21:50:18
+Hora salida: 2026-03-10 21:50:54
+Tiempo estacionado: 0h 0min
+Espacio: 1
+Estado: SALIDO
+Pagado: Si
+Monto: $0.50
+----------------------------------------
+Codigo: TKT-26868450
+Placa: 6567
+Hora entrada: 2026-03-10 22:48:45
+Hora salida: Aún estacionado
+Tiempo estacionado: 0h 2min
+Espacio: 4
+Estado: ESTACIONADO
+Pagado: No
+Monto: $0.00
+----------------------------------------
+Codigo: TKT-4852EE32
+Placa: 6567
+Hora entrada: 2026-03-10 22:49:05
+Hora salida: Aún estacionado
+Tiempo estacionado: 0h 2min
+Espacio: 1
+Estado: ESTACIONADO
+Pagado: No
+Monto: $0.00
+----------------------------------------
+Codigo: TKT-D07B066B
+Placa: 6567
+Hora entrada: 2026-03-10 22:49:09
+Hora salida: Aún estacionado
+Tiempo estacionado: 0h 2min
+Espacio: 2
+Estado: ESTACIONADO
+Pagado: No
+Monto: $0.00
+----------------------------------------
+
+TOTAL COBRADO DEL DIA: $6.02
